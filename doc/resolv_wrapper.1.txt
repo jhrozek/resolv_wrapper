@@ -1,0 +1,40 @@
+resolv_wrapper(1)
+=================
+
+NAME
+----
+
+resolv_wrapper - A wrapper for the dns resolving.
+
+SYNOPSIS
+--------
+
+LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_NAMESERVER="127.0.0.21" *./myapplication*
+
+DESCRIPTION
+-----------
+
+TODO
+
+ENVIRONMENT VARIABLES
+---------------------
+
+*RESOLV_WRAPPER_NAMESERVER*::
+
+Specify the nameserver to use.
+
+*RESOLV_WRAPPER_DEBUGLEVEL*::
+
+If you need to see what is going on in resolv_wrapper itself or try to find a
+bug, you can enable logging support in resolv_wrapper if you built it with
+debug symbols.
+
+- 0 = ERROR
+- 1 = WARNING
+- 2 = DEBUG
+- 3 = TRACE
+
+EXAMPLE
+-------
+
+  $ LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_NAMESERVER="127.0.0.21" dig test.example.site
