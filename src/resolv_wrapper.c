@@ -128,6 +128,10 @@ struct rwrap_libc_fns {
 	int (*libc___res_init)(void);
 	int (*libc_res_ninit)(struct __res_state *state);
 	int (*libc___res_ninit)(struct __res_state *state);
+	void (*libc_res_nclose)(struct __res_state *state);
+	void (*libc___res_nclose)(struct __res_state *state);
+	void (*libc_res_close)(void);
+	void (*libc___res_close)(void);
 };
 
 struct rwrap {
@@ -298,6 +302,22 @@ static int libc_res_ninit(struct __res_state *state)
 #endif
 }
 
+static void libc_res_nclose(struct __res_state *state)
+{
+#if defined(HAVE_RES_NCLOSE)
+	rwrap_load_lib_function(RWRAP_LIBC, res_nclose);
+
+	rwrap.fns.libc_res_nclose(state);
+#elif defined(HAVE___RES_NCLOSE)
+	rwrap_load_lib_function(RWRAP_LIBC, __res_nclose);
+
+	rwrap.fns.libc___res_nclose(state);
+#else
+#error "No res_nclose function"
+#endif
+}
+
+
 /****************************************************************************
  *   RES_NINIT
  ***************************************************************************/
@@ -370,4 +390,40 @@ int __res_init(void)
 #endif
 {
 	return rwrap_res_init();
+}
+
+/****************************************************************************
+ *   RES_NCLOSE
+ ***************************************************************************/
+
+static void rwrap_res_nclose(struct __res_state *state)
+{
+	libc_res_nclose(state);
+}
+
+#if defined(HAVE_RES_NCLOSE)
+void res_nclose(struct __res_state *state)
+#elif defined(HAVE___RES_NCLOSE)
+void __res_nclose(struct __res_state *state)
+#endif
+{
+	libc_res_nclose(state);
+}
+
+/****************************************************************************
+ *   RES_CLOSE
+ ***************************************************************************/
+
+static void rwrap_res_close(void)
+{
+	rwrap_res_nclose(&rwrap_res_state);
+}
+
+#if defined(HAVE_RES_CLOSE)
+void res_close(void)
+#elif defined(HAVE___RES_CLOSE)
+void __res_close(void)
+#endif
+{
+	rwrap_res_close();
 }
