@@ -144,6 +144,18 @@ struct rwrap_libc_fns {
 				 int type,
 				 unsigned char *answer,
 				 int anslen);
+	int (*libc_res_nsearch)(struct __res_state *state,
+				const char *dname,
+				int class,
+				int type,
+				unsigned char *answer,
+				int anslen);
+	int (*libc___res_nsearch)(struct __res_state *state,
+				  const char *dname,
+				  int class,
+				  int type,
+				  unsigned char *answer,
+				  int anslen);
 };
 
 struct rwrap {
@@ -359,6 +371,36 @@ static int libc_res_nquery(struct __res_state *state,
 #endif
 }
 
+static int libc_res_nsearch(struct __res_state *state,
+			    const char *dname,
+			    int class,
+			    int type,
+			    unsigned char *answer,
+			    int anslen)
+{
+#if defined(HAVE_RES_NSEARCH)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nsearch);
+
+	return rwrap.fns.libc_res_nsearch(state,
+					  dname,
+					  class,
+					  type,
+					  answer,
+					  anslen);
+#elif defined(HAVE___RES_NSEARCH)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, __res_nsearch);
+
+	return rwrap.fns.libc___res_nsearch(state,
+					    dname,
+					    class,
+					    type,
+					    answer,
+					    anslen);
+#else
+#error "No res_nsearch function"
+#endif
+}
+
 
 /****************************************************************************
  *   RES_NINIT
@@ -570,4 +612,106 @@ int __res_query(const char *dname,
 #endif
 {
 	return rwrap_res_query(dname, class, type, answer, anslen);
+}
+
+/****************************************************************************
+ *   RES_NSEARCH
+ ***************************************************************************/
+
+static int rwrap_res_nsearch(struct __res_state *state,
+			     const char *dname,
+			     int class,
+			     int type,
+			     unsigned char *answer,
+			     int anslen)
+{
+	int rc;
+#ifndef NDEBUG
+	int i;
+#endif
+
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "Resolve the domain name [%s] - class=%d, type=%d",
+		  dname, class, type);
+#ifndef NDEBUG
+	for (i = 0; i < state->nscount; i++) {
+		char ip[INET6_ADDRSTRLEN];
+
+		inet_ntop(AF_INET, &state->nsaddr_list[i].sin_addr, ip, sizeof(ip));
+		RWRAP_LOG(RWRAP_LOG_TRACE,
+			  "        nameserver: %s",
+			  ip);
+	}
+#endif
+
+	rc = libc_res_nsearch(state, dname, class, type, answer, anslen);
+
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "The returned response length is: %d",
+		  rc);
+
+	return rc;
+}
+
+#if defined(HAVE_RES_NSEARCH)
+int res_nsearch(struct __res_state *state,
+		const char *dname,
+		int class,
+		int type,
+		unsigned char *answer,
+		int anslen)
+#elif defined(HAVE___RES_NSEARCH)
+int __res_nsearch(struct __res_state *state,
+		  const char *dname,
+		  int class,
+		  int type,
+		  unsigned char *answer,
+		  int anslen)
+#endif
+{
+	return rwrap_res_nsearch(state, dname, class, type, answer, anslen);
+}
+
+/****************************************************************************
+ *   RES_QUERY
+ ***************************************************************************/
+
+static int rwrap_res_search(const char *dname,
+			    int class,
+			    int type,
+			    unsigned char *answer,
+			    int anslen)
+{
+	int rc;
+
+	rc = rwrap_res_ninit(&rwrap_res_state);
+	if (rc != 0) {
+		return rc;
+	}
+
+	rc = rwrap_res_nsearch(&rwrap_res_state,
+			       dname,
+			       class,
+			       type,
+			       answer,
+			       anslen);
+
+	return rc;
+}
+
+#if defined(HAVE_RES_SEARCH)
+int res_search(const char *dname,
+	       int class,
+	       int type,
+	       unsigned char *answer,
+	       int anslen)
+#elif defined(HAVE___RES_SEARCH)
+int __res_search(const char *dname,
+		 int class,
+		 int type,
+		 unsigned char *answer,
+		 int anslen)
+#endif
+{
+	return rwrap_res_search(dname, class, type, answer, anslen);
 }
