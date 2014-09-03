@@ -33,7 +33,9 @@
 
 #include "config.h"
 
+#include <errno.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -41,6 +43,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <resolv.h>
 
@@ -401,6 +404,120 @@ static int libc_res_nsearch(struct __res_state *state,
 #endif
 }
 
+/****************************************************************************
+ *   RES_HELPER
+ ***************************************************************************/
+
+#define RESOLV_MATCH(line, name) \
+	(strncmp(line, name, sizeof(name) - 1) == 0 && \
+	(line[sizeof(name) - 1] == ' ' || \
+	 line[sizeof(name) - 1] == '\t'))
+
+static int rwrap_parse_resolv_conf(struct __res_state *state,
+				   const char *resolv_conf)
+{
+	FILE *fp;
+	char buf[BUFSIZ];
+	int nserv = 0;
+
+	fp = fopen(resolv_conf, "r");
+	if (fp == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Opening %s failed: %s",
+			  resolv_conf, strerror(errno));
+		return -1;
+	}
+
+	while(fgets(buf, sizeof(buf), fp) != NULL) {
+		char *p;
+
+		/* Ignore comments */
+		if (buf[0] == '#' || buf[0] == ';') {
+			continue;
+		}
+
+		if (RESOLV_MATCH(buf, "nameserver") && nserv < MAXNS) {
+			struct in_addr a;
+			char *q;
+			int ok;
+
+			p = buf + strlen("nameserver");
+
+			/* Skip spaces and tabs */
+			while(isblank((int)p[0])) {
+				p++;
+			}
+
+			q = p;
+			while(q[0] != '\n' && q[0] != '\0') {
+				q++;
+			}
+			q[0] = '\0';
+
+			ok = inet_pton(AF_INET, p, &a);
+			if (ok) {
+				state->nsaddr_list[state->nscount] = (struct sockaddr_in) {
+					.sin_family = AF_INET,
+					.sin_addr = a,
+					.sin_port = htons(53),
+				};
+
+				state->nscount++;
+				nserv++;
+			} else {
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+				/* IPv6 */
+				struct in6_addr a6;
+				ok = inet_pton(AF_INET6, p, &a6);
+				if (ok) {
+					struct sockaddr_in6 *sa6;
+
+					sa6 = malloc(sizeof(*sa6));
+					if (sa6 == NULL) {
+						return -1;
+					}
+
+					sa6->sin6_family = AF_INET6;
+					sa6->sin6_port = htons(53);
+					sa6->sin6_flowinfo = 0;
+					sa6->sin6_addr = a6;
+
+					state->_u._ext.nsaddrs[state->_u._ext.nscount] = sa6;
+					state->_u._ext.nssocks[state->_u._ext.nscount] = -1;
+					state->_u._ext.nsmap[state->_u._ext.nscount] = MAXNS + 1;
+
+					state->_u._ext.nscount++;
+					nserv++;
+				} else {
+					RWRAP_LOG(RWRAP_LOG_ERROR,
+						"Malformed DNS server");
+					continue;
+				}
+#else /* !HAVE_RESOLV_IPV6_NSADDRS */
+				/*
+				 * BSD uses an opaque structure to store the
+				 * IPv6 addresses. So we can not simply store
+				 * these addresses the same way as above.
+				 */
+				RWRAP_LOG(RWRAP_LOG_WARN,
+					  "resolve_wrapper does not support "
+					  "IPv6 on this platform");
+					continue;
+#endif
+			}
+			continue;
+		} /* TODO: match other keywords */
+	}
+
+	if (ferror(fp)) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Reading from %s failed",
+			  resolv_conf);
+		return -1;
+	}
+
+	return 0;
+}
 
 /****************************************************************************
  *   RES_NINIT
@@ -412,31 +529,26 @@ static int rwrap_res_ninit(struct __res_state *state)
 
 	rc = libc_res_ninit(state);
 	if (rc == 0) {
-		const char *rwrap_ns_env = getenv("RESOLV_WRAPPER_NAMESERVER");
+		const char *resolv_conf = getenv("RESOLV_WRAPPER_CONF");
 
-		if (rwrap_ns_env != NULL) {
-			int ok;
+		if (resolv_conf != NULL) {
+			uint16_t i;
+
+			(void)i; /* maybe unused */
 
 			/* Delete name servers */
-			state->nscount = 1;
+			state->nscount = 0;
 			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
 
-			/* Simply zero the the padding array in the union */
-			memset(state->_u.pad, 0, sizeof(state->_u.pad));
-
-			state->nsaddr_list[0] = (struct sockaddr_in) {
-				.sin_family = AF_INET,
-				.sin_port = htons(53),
-			};
-
-			ok = inet_pton(AF_INET, rwrap_ns_env, &state->nsaddr_list[0].sin_addr);
-			if (!ok) {
-				return -1;
+			state->_u._ext.nscount = 0;
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+			for (i = 0; i < state->_u._ext.nscount; i++) {
+				free(state->_u._ext.nsaddrs[i]);
+				state->_u._ext.nssocks[i] = 0;
 			}
+#endif
 
-			RWRAP_LOG(RWRAP_LOG_DEBUG,
-				  "Using [%s] as new nameserver",
-				  rwrap_ns_env);
+			rc = rwrap_parse_resolv_conf(state, resolv_conf);
 		}
 	}
 
