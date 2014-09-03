@@ -246,7 +246,7 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 
 	if (handle == NULL) {
 #ifdef RTLD_NEXT
-		handle = swrap.libc_handle = swrap.libsocket_handle = RTLD_NEXT;
+		handle = rwrap.libc_handle = rwrap.libresolv_handle = RTLD_NEXT;
 #else
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Failed to dlopen library: %s\n",
