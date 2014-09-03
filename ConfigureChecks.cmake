@@ -73,13 +73,13 @@ check_function_exists(__res_nclose HAVE___RES_NCLOSE)
 check_function_exists(res_query HAVE_RES_QUERY)
 check_function_exists(__res_query HAVE___RES_QUERY)
 
+check_function_exists(res_nquery HAVE_RES_NQUERY)
+check_function_exists(__res_nquery HAVE___RES_NQUERY)
+
 check_function_exists(res_search HAVE_RES_SEARCH)
 check_function_exists(__res_search HAVE___RES_SEARCH)
 
-check_function_exists(res_query HAVE_RES_NQUERY)
-check_function_exists(__res_nquery HAVE___RES_NQUERY)
-
-check_function_exists(res_search HAVE_RES_NSEARCH)
+check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
 
 set(CMAKE_REQUIRED_LIBRARIES)
