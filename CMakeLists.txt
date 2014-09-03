@@ -77,8 +77,8 @@ install(
 )
 
 add_subdirectory(doc)
-#if (UNIT_TESTING)
-#    find_package(CMocka REQUIRED)
-#    include(AddCMockaTest)
-#    add_subdirectory(tests)
-#endif (UNIT_TESTING)
+if (UNIT_TESTING)
+    find_package(CMocka REQUIRED)
+    include(AddCMockaTest)
+    add_subdirectory(tests)
+endif (UNIT_TESTING)
