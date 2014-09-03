@@ -425,16 +425,12 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 	while(fgets(buf, sizeof(buf), fp) != NULL) {
 		char *p;
 
-		if (nserv >= MAXNS) {
-			return -1;
-		}
-
 		/* Ignore comments */
 		if (buf[0] == '#' || buf[0] == ';') {
 			continue;
 		}
 
-		if (RESOLV_MATCH(buf, "nameserver")) {
+		if (RESOLV_MATCH(buf, "nameserver") && nserv < MAXNS) {
 			struct in_addr a;
 			char *q;
 			int ok;
