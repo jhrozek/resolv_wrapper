@@ -82,6 +82,14 @@ check_function_exists(__res_nquery HAVE___RES_NQUERY)
 check_function_exists(res_search HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
 
+set(CMAKE_REQUIRED_LIBRARIES)
+
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if (HAVE_LIBDL)
+    find_library(DLFCN_LIBRARY dl)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ${DLFCN_LIBRARY})
+endif (HAVE_LIBDL)
+
 # IPV6
 check_c_source_compiles("
     #include <stdlib.h>
