@@ -459,6 +459,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 				state->nscount++;
 				nserv++;
 			} else {
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
 				/* IPv6 */
 				struct in6_addr a6;
 				ok = inet_pton(AF_INET6, p, &a6);
@@ -486,6 +487,12 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 						"Malformed DNS server");
 					continue;
 				}
+#else /* BSD */
+				RWRAP_LOG(RWRAP_LOG_WARN,
+					  "resolve_wrapper does not support "
+					  "IPv6 on this platform");
+					continue;
+#endif
 			}
 			continue;
 		} /* TODO match other keywords */
@@ -514,17 +521,21 @@ static int rwrap_res_ninit(struct __res_state *state)
 		const char *resolv_conf = getenv("RESOLV_WRAPPER_CONF");
 
 		if (resolv_conf != NULL) {
-			int i;
+			uint16_t i;
+
+			(void)i; /* maybe unused */
 
 			/* Delete name servers */
 			state->nscount = 0;
 			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
 
 			state->_u._ext.nscount = 0;
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
 			for (i = 0; i < state->_u._ext.nscount; i++) {
 				free(state->_u._ext.nsaddrs[i]);
 				state->_u._ext.nssocks[i] = 0;
 			}
+#endif
 
 			rc = rwrap_parse_resolv_conf(state, resolv_conf);
 		}
