@@ -4,24 +4,30 @@ resolv_wrapper(1)
 NAME
 ----
 
-resolv_wrapper - A wrapper for the dns resolving.
+resolv_wrapper - A wrapper for the dns resolving with our own resolv.conf.
 
 SYNOPSIS
 --------
 
-LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_NAMESERVER="127.0.0.21" *./myapplication*
+LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_CONF="/path/to/resolv.conf" *./myapplication*
 
 DESCRIPTION
 -----------
 
-TODO
+resolv_wrapper makes it possible on most UNIX platforms to contact your own DNS
+implmentation in your test environment. It requires socket_wrapper to be able
+to contact it.
+
+- Redirects name queries to the nameservers specified in your resolv.conf
 
 ENVIRONMENT VARIABLES
 ---------------------
 
-*RESOLV_WRAPPER_NAMESERVER*::
+*RESOLV_WRAPPER_CONF*::
 
-Specify the nameserver to use.
+This is used to specify the resolv.conf to use. The format of the resolv.conf
+file is defined in the manpage 'resolv.conf(5)'. Currently only the *namserver*
+directive is supported.
 
 *RESOLV_WRAPPER_DEBUGLEVEL*::
 
@@ -37,4 +43,4 @@ debug symbols.
 EXAMPLE
 -------
 
-  $ LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_NAMESERVER="127.0.0.21" dig test.example.site
+  $ LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_CONF="./resolv.conf" dig test.example.site
