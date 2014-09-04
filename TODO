@@ -1,0 +1,19 @@
+* Implement a fake dns server to test res_query().
+* Make it possible to fully fake DNS queries:
+  - This requires a dns_hosts_file which should look like this:
+     A localdc.samba.example.com 127.0.0.21
+     AAAA localdc.samba.example.com fd00::5357:5f15
+     A samba.example.com 127.0.0.21
+     AAAA samba.example.com fd00::5357:5f15
+     SRV _ldap._tcp.samba.example.com localdc.samba.example.com 389
+     SRV _ldap._tcp.dc._msdcs.samba.example.com localdc.samba.example.com 389
+     SRV _ldap._tcp.207b1e26-1433-4af2-8d3a-b9f4e5c7dc63.domains._msdcs.samba.example.com localdc.samba.example.com 389
+     SRV _kerberos._tcp.samba.example.com localdc.samba.example.com 88
+     SRV _kerberos._udp.samba.example.com localdc.samba.example.com 88
+     SRV _kerberos._tcp.dc._msdcs.samba.example.com localdc.samba.example.com 88
+     SRV _kpasswd._tcp.samba.example.com localdc.samba.example.com 464
+     SRV _kpasswd._udp.samba.example.com localdc.samba.example.com 464
+     CNAME 8553006a-8d1e-4bec-9013-972ebc36638a._msdcs.samba.example.com localdc.samba.example.com
+  - This file is parsed and then we create answers which we can return
+    with res_query() or res_search(). This is more or less a DNS faking.
+  - See libcli/dns/dns_hosts_file.c in Samba source code.
