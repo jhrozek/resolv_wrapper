@@ -111,8 +111,15 @@ static void test_res_ninit(void **state)
 	assert_int_equal(rv, 0);
 
 	/* test we have two v4 and one v6 server */
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
 	assert_int_equal(dnsstate.nscount, 2);
 	assert_int_equal(dnsstate._u._ext.nscount, 1);
+#else
+        /* On platforms that dont support IPv6, the v6 address is skipped
+         * and we end up reading three v4 addresses
+         */
+	assert_int_equal(dnsstate.nscount, 3);
+#endif /* HAVE_RESOLV_IPV6_NSADDRS */
 
 	/* validate the servers */
 	/* IPv4 */
