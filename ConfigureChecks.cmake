@@ -52,35 +52,44 @@ check_include_file(resolv.h HAVE_RESOLV_H)
 
 # FUNCTIONS
 check_library_exists(resolv res_send "" RES_SEND_IN_LIBRESOLV)
+check_library_exists(resolv res_9_send "" RES_9_SEND_IN_LIBRESOLV)
 check_library_exists(resolv __res_send "" __RES_SEND_IN_LIBRESOLV)
-if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
+if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV OR RES_9_SEND_IN_LIBRESOLV)
     set(HAVE_LIBRESOLV TRUE)
     set(CMAKE_REQUIRED_LIBRARIES resolv)
 endif()
 
 check_function_exists(res_init HAVE_RES_INIT)
 check_function_exists(__res_init HAVE___RES_INIT)
+check_function_exists(res_9_init HAVE_RES_9_INIT)
 
 check_function_exists(res_ninit HAVE_RES_NINIT)
 check_function_exists(__res_ninit HAVE___RES_NINIT)
+check_function_exists(res_9_ninit HAVE_RES_9_NINIT)
 
 check_function_exists(res_close HAVE_RES_CLOSE)
 check_function_exists(__res_close HAVE___RES_CLOSE)
+check_function_exists(res_9_close HAVE_RES_9_CLOSE)
 
 check_function_exists(res_nclose HAVE_RES_NCLOSE)
 check_function_exists(__res_nclose HAVE___RES_NCLOSE)
+check_function_exists(res_9_nclose HAVE_RES_9_NCLOSE)
 
 check_function_exists(res_query HAVE_RES_QUERY)
 check_function_exists(__res_query HAVE___RES_QUERY)
+check_function_exists(res_9_query HAVE_RES_9_QUERY)
 
 check_function_exists(res_nquery HAVE_RES_NQUERY)
 check_function_exists(__res_nquery HAVE___RES_NQUERY)
+check_function_exists(res_9_nquery HAVE_RES_9_NQUERY)
 
 check_function_exists(res_search HAVE_RES_SEARCH)
 check_function_exists(__res_search HAVE___RES_SEARCH)
+check_function_exists(res_9_search HAVE_RES_9_SEARCH)
 
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
+check_function_exists(res_9_nsearch HAVE_RES_9_NSEARCH)
 
 set(CMAKE_REQUIRED_LIBRARIES)
 

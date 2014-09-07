@@ -20,27 +20,35 @@
 
 #cmakedefine HAVE_RES_INIT 1
 #cmakedefine HAVE___RES_INIT 1
+#cmakedefine HAVE_RES_9_INIT 1
 
 #cmakedefine HAVE_RES_NINIT 1
 #cmakedefine HAVE___RES_NINIT 1
+#cmakedefine HAVE_RES_9_NINIT 1
 
 #cmakedefine HAVE_RES_CLOSE 1
 #cmakedefine HAVE___RES_CLOSE 1
+#cmakedefine HAVE_RES_9_CLOSE 1
 
 #cmakedefine HAVE_RES_NCLOSE 1
 #cmakedefine HAVE___RES_NCLOSE 1
+#cmakedefine HAVE_RES_9_NCLOSE 1
 
 #cmakedefine HAVE_RES_QUERY 1
 #cmakedefine HAVE___RES_QUERY 1
+#cmakedefine HAVE_RES_9_QUERY 1
 
 #cmakedefine HAVE_RES_SEARCH 1
 #cmakedefine HAVE___RES_SEARCH 1
+#cmakedefine HAVE_RES_9_SEARCH 1
 
 #cmakedefine HAVE_RES_NQUERY 1
 #cmakedefine HAVE___RES_NQUERY 1
+#cmakedefine HAVE_RES_9_NQUERY 1
 
 #cmakedefine HAVE_RES_NSEARCH 1
 #cmakedefine HAVE___RES_NSEARCH 1
+#cmakedefine HAVE_RES_9_NSEARCH 1
 
 /*************************** LIBRARIES ***************************/
 

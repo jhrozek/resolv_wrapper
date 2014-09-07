@@ -8,6 +8,9 @@ include_directories(
 )
 
 set(TESTSUITE_LIBRARIES ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
+if (HAVE_LIBRESOLV)
+    set(TESTSUITE_LIBRARIES ${TESTSUITE_LIBRARIES} resolv)
+endif()
 
 set(RWRAP_TESTS
     test_res_init)

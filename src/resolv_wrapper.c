@@ -129,12 +129,16 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 struct rwrap_libc_fns {
 	int (*libc_res_init)(void);
 	int (*libc___res_init)(void);
+	int (*libc_res_9_init)(void);
 	int (*libc_res_ninit)(struct __res_state *state);
 	int (*libc___res_ninit)(struct __res_state *state);
+	int (*libc_res_9_ninit)(struct __res_state *state);
 	void (*libc_res_nclose)(struct __res_state *state);
 	void (*libc___res_nclose)(struct __res_state *state);
+	void (*libc_res_9_nclose)(struct __res_state *state);
 	void (*libc_res_close)(void);
 	void (*libc___res_close)(void);
+	void (*libc_res_9_close)(void);
 	int (*libc_res_nquery)(struct __res_state *state,
 			       const char *dname,
 			       int class,
@@ -147,6 +151,12 @@ struct rwrap_libc_fns {
 				 int type,
 				 unsigned char *answer,
 				 int anslen);
+	int (*libc_res_9_nquery)(struct __res_state *state,
+				 const char *dname,
+				 int class,
+				 int type,
+				 unsigned char *answer,
+				 int anslen);
 	int (*libc_res_nsearch)(struct __res_state *state,
 				const char *dname,
 				int class,
@@ -154,6 +164,12 @@ struct rwrap_libc_fns {
 				unsigned char *answer,
 				int anslen);
 	int (*libc___res_nsearch)(struct __res_state *state,
+				  const char *dname,
+				  int class,
+				  int type,
+				  unsigned char *answer,
+				  int anslen);
+	int (*libc_res_9_nsearch)(struct __res_state *state,
 				  const char *dname,
 				  int class,
 				  int type,
@@ -318,6 +334,9 @@ static int libc_res_ninit(struct __res_state *state)
 	rwrap_load_lib_function(RWRAP_LIBC, __res_ninit);
 
 	return rwrap.fns.libc___res_ninit(state);
+#elif defined(HAVE_RES_9_NINIT)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_9_ninit);
+	return rwrap.fns.libc_res_9_ninit(state);
 #else
 #error "No res_ninit function"
 #endif
@@ -333,6 +352,10 @@ static void libc_res_nclose(struct __res_state *state)
 	rwrap_load_lib_function(RWRAP_LIBC, __res_nclose);
 
 	rwrap.fns.libc___res_nclose(state);
+#elif defined(HAVE_RES_9_NCLOSE)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_9_nclose);
+
+	rwrap.fns.libc_res_9_nclose(state);
 #else
 #error "No res_nclose function"
 #endif
@@ -363,6 +386,15 @@ static int libc_res_nquery(struct __res_state *state,
 					   type,
 					   answer,
 					   anslen);
+#elif defined(HAVE_RES_9_NQUERY)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_9_ninit);
+
+	return rwrap.fns.libc_res_9_nquery(state,
+					   dname,
+					   class,
+					   type,
+					   answer,
+					   anslen);
 #else
 #error "No res_nquery function"
 #endif
@@ -388,6 +420,15 @@ static int libc_res_nsearch(struct __res_state *state,
 	rwrap_load_lib_function(RWRAP_LIBRESOLV, __res_nsearch);
 
 	return rwrap.fns.libc___res_nsearch(state,
+					    dname,
+					    class,
+					    type,
+					    answer,
+					    anslen);
+#elif defined(HAVE_RES_9_NSEARCH)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_9_nsearch);
+
+	return rwrap.fns.libc_res_9_nsearch(state,
 					    dname,
 					    class,
 					    type,
@@ -544,6 +585,8 @@ static int rwrap_res_ninit(struct __res_state *state)
 int res_ninit(struct __res_state *state)
 #elif defined(HAVE___RES_NINIT)
 int __res_ninit(struct __res_state *state)
+#elif defined(HAVE_RES_9_NINIT)
+int res_9_ninit(struct __res_state *state)
 #endif
 {
 	return rwrap_res_ninit(state);
@@ -568,6 +611,8 @@ static int rwrap_res_init(void)
 int res_init(void)
 #elif defined(HAVE___RES_INIT)
 int __res_init(void)
+#elif defined(HAVE_RES_9_INIT)
+int res_9_init(void)
 #endif
 {
 	return rwrap_res_init();
@@ -586,6 +631,8 @@ static void rwrap_res_nclose(struct __res_state *state)
 void res_nclose(struct __res_state *state)
 #elif defined(HAVE___RES_NCLOSE)
 void __res_nclose(struct __res_state *state)
+#elif defined(HAVE_RES_9_NCLOSE)
+void res_9_nclose(struct __res_state *state)
 #endif
 {
 	libc_res_nclose(state);
@@ -604,6 +651,8 @@ static void rwrap_res_close(void)
 void res_close(void)
 #elif defined(HAVE___RES_CLOSE)
 void __res_close(void)
+#elif defined(HAVE_RES_9_CLOSE)
+void res_9_close(void)
 #endif
 {
 	rwrap_res_close();
@@ -662,6 +711,13 @@ int __res_nquery(struct __res_state *state,
 		 int type,
 		 unsigned char *answer,
 		 int anslen)
+#elif defined(HAVE_RES_9_NQUERY)
+int res_9_nquery(struct __res_state *state,
+		 const char *dname,
+		 int class,
+		 int type,
+		 unsigned char *answer,
+		 int anslen)
 #endif
 {
 	return rwrap_res_nquery(state, dname, class, type, answer, anslen);
@@ -702,6 +758,12 @@ int res_query(const char *dname,
 	      int anslen)
 #elif defined(HAVE___RES_QUERY)
 int __res_query(const char *dname,
+		int class,
+		int type,
+		unsigned char *answer,
+		int anslen)
+#elif defined(HAVE_RES_QUERY)
+int res_9_query(const char *dname,
 		int class,
 		int type,
 		unsigned char *answer,
@@ -764,6 +826,13 @@ int __res_nsearch(struct __res_state *state,
 		  int type,
 		  unsigned char *answer,
 		  int anslen)
+#elif defined(HAVE_RES_9_NSEARCH)
+int res_9_nsearch(struct __res_state *state,
+		  const char *dname,
+		  int class,
+		  int type,
+		  unsigned char *answer,
+		  int anslen)
 #endif
 {
 	return rwrap_res_nsearch(state, dname, class, type, answer, anslen);
@@ -804,6 +873,12 @@ int res_search(const char *dname,
 	       int anslen)
 #elif defined(HAVE___RES_SEARCH)
 int __res_search(const char *dname,
+		 int class,
+		 int type,
+		 unsigned char *answer,
+		 int anslen)
+#elif defined(HAVE_RES_9_SEARCH)
+int res_9_search(const char *dname,
 		 int class,
 		 int type,
 		 unsigned char *answer,
