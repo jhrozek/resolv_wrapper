@@ -7,6 +7,10 @@ include_directories(
   ${CMOCKA_INCLUDE_DIR}
 )
 
+# A simple DNS server for testing
+add_executable(dns_srv dns_srv.c)
+target_link_libraries(dns_srv ${RWRAP_REQUIRED_LIBRARIES})
+
 set(TESTSUITE_LIBRARIES ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
 if (HAVE_LIBRESOLV)
     set(TESTSUITE_LIBRARIES ${TESTSUITE_LIBRARIES} resolv)

@@ -1,4 +1,3 @@
-* Implement a fake dns server to test res_query().
 * Make it possible to fully fake DNS queries:
   - This requires a dns_hosts_file which should look like this:
      A localdc.samba.example.com 127.0.0.21
