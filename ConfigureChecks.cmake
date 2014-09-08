@@ -84,6 +84,24 @@ check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
+if (UNIX)
+    if (NOT LINUX)
+        # libsocket (Solaris)
+        check_library_exists(socket getaddrinfo "" HAVE_LIBSOCKET)
+        if (HAVE_LIBSOCKET)
+          set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} socket)
+        endif (HAVE_LIBSOCKET)
+
+        # libnsl/inet_pton (Solaris)
+        check_library_exists(nsl inet_pton "" HAVE_LIBNSL)
+        if (HAVE_LIBNSL)
+            set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} nsl)
+        endif (HAVE_LIBNSL)
+    endif (NOT LINUX)
+
+    check_function_exists(getaddrinfo HAVE_GETADDRINFO)
+endif (UNIX)
+
 check_library_exists(dl dlopen "" HAVE_LIBDL)
 if (HAVE_LIBDL)
     find_library(DLFCN_LIBRARY dl)
