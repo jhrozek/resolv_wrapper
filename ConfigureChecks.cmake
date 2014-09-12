@@ -51,11 +51,12 @@ check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(resolv.h HAVE_RESOLV_H)
 
 # FUNCTIONS
-check_library_exists(resolv res_send "" RES_SEND_IN_LIBRESOLV)
-check_library_exists(resolv __res_send "" __RES_SEND_IN_LIBRESOLV)
-if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
+find_library(RESOLV_LIRBRARY resolv)
+check_library_exists(${RESOLV_LIRBRARY} res_send "" RES_SEND_IN_LIBRESOLV)
+check_library_exists(${RESOLV_LIRBRARY} __res_send "" __RES_SEND_IN_LIBRESOLV)
+if (RESOLV_LIRBRARY AND RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
     set(HAVE_LIBRESOLV TRUE)
-    set(CMAKE_REQUIRED_LIBRARIES resolv)
+    set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 endif()
 
 check_function_exists(res_init HAVE_RES_INIT)
