@@ -1,5 +1,7 @@
 project(tests C)
 
+include(FindPkgConfig)
+
 include_directories(
   ${CMAKE_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -27,6 +29,15 @@ endif()
 set(RWRAP_TESTS
     test_res_init)
 
+set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION})
+
+# Some tests require socket_wrapper as well. FIXME - set per-test
+pkg_check_modules(SOCKET_WRAPPER socket_wrapper)
+if (SOCKET_WRAPPER_FOUND)
+    set(RWRAP_TESTS ${RWRAP_TESTS} test_res_query_search)
+    set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION}\ ${SOCKET_WRAPPER_LDFLAGS})
+endif()
+
 foreach(_RWRAP_TEST ${RWRAP_TESTS})
     add_cmocka_test(${_RWRAP_TEST} ${_RWRAP_TEST}.c ${TORTURE_LIBRARY} ${TESTSUITE_LIBRARIES})
 
@@ -35,12 +46,12 @@ foreach(_RWRAP_TEST ${RWRAP_TESTS})
             TEST
                 ${_RWRAP_TEST}
             PROPERTY
-                ENVIRONMENT DYLD_FORCE_FLAT_NAMESPACE=1;DYLD_INSERT_LIBRARIES=${RESOLV_WRAPPER_LOCATION})
+                ENVIRONMENT DYLD_FORCE_FLAT_NAMESPACE=1;DYLD_INSERT_LIBRARIES=${PRELOAD_LIBS})
     else ()
         set_property(
             TEST
                 ${_RWRAP_TEST}
             PROPERTY
-                ENVIRONMENT LD_PRELOAD=${RESOLV_WRAPPER_LOCATION})
+                ENVIRONMENT LD_PRELOAD=${PRELOAD_LIBS})
     endif()
 endforeach()
