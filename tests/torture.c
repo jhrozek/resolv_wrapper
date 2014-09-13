@@ -59,6 +59,8 @@
 #define TORTURE_DNS_SRV_PIDFILE "dns_srv.pid"
 #define TORTURE_PCAP_FILE "socket_trace.pcap"
 
+#define RWRAP_RESOLV_CONF_TMPL "rwrap_resolv_conf_XXXXXX"
+
 const char *torture_server_address(int family)
 {
 	switch (family) {
@@ -142,7 +144,49 @@ void torture_setup_socket_dir(void **state)
 	*state = s;
 }
 
+const char *torture_server_resolv_conf(void **state)
+{
+	struct torture_state *s = (struct torture_state *) *state;
+	if (s == NULL) {
+		return NULL;
+	}
+	return s->resolv_conf;
+}
+
+static char *torture_setup_resolv_conf(const char **nameservers, size_t num_ns)
+{
+	char *path;
+	int rc_fd;
+	FILE *resolv_conf;
+	size_t i;
+
+	path = strdup(RWRAP_RESOLV_CONF_TMPL);
+	assert_non_null(path);
+	rc_fd = mkstemp(path);
+	assert_non_null(path);
+	resolv_conf = fdopen(rc_fd, "a");
+	assert_non_null(resolv_conf);
+
+	for (i = 0; i < num_ns; i++) {
+		fputs("nameserver ", resolv_conf);
+		fputs(nameservers[i], resolv_conf);
+		fputs("\n", resolv_conf);
+	}
+	fflush(resolv_conf);
+
+	fclose(resolv_conf);
+	close(rc_fd);
+	return path;
+}
+
+static void torture_teardown_resolv_conf(char *resolv_conf_path)
+{
+	unlink(resolv_conf_path);
+	free(resolv_conf_path);
+}
+
 static void torture_setup_dns_srv_ip(void **state,
+				     int family,
 				     const char *ip,
 				     int port)
 {
@@ -150,6 +194,9 @@ static void torture_setup_dns_srv_ip(void **state,
 	char start_dns_srv[1024] = {0};
 	int count = 0;
 	int rc;
+	const char *nameservers[1] = {
+	    torture_server_address(family),
+	};
 
 	torture_setup_socket_dir(state);
 
@@ -180,11 +227,15 @@ static void torture_setup_dns_srv_ip(void **state,
 
 	/* set default iface for the client */
 	setenv("SOCKET_WRAPPER_DEFAULT_IFACE", "170", 1);
+
+	/* write a resolv.conf for the client */
+	s->resolv_conf = torture_setup_resolv_conf(nameservers, 1);
 }
 
 void torture_setup_dns_srv_ipv4(void **state)
 {
 	torture_setup_dns_srv_ip(state,
+				 AF_INET,
 				 "0.0.0.0",
 				 torture_server_port());
 }
@@ -192,6 +243,7 @@ void torture_setup_dns_srv_ipv4(void **state)
 void torture_setup_dns_srv_ipv6(void **state)
 {
 	torture_setup_dns_srv_ip(state,
+				 AF_INET6,
 				 "::",
 				 torture_server_port());
 }
@@ -271,6 +323,7 @@ void torture_teardown_dns_srv(void **state)
 	}
 
 done:
+	torture_teardown_resolv_conf(s->resolv_conf);
 	torture_teardown_socket_dir(state);
 }
 
