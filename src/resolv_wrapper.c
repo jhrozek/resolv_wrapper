@@ -120,6 +120,118 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 }
 #endif /* NDEBUG RWRAP_LOG */
 
+
+static void rwrap_fake_header(unsigned char **aptr)
+{
+	unsigned char *a;
+
+	a = *aptr;
+
+	NS_PUT16(12345, a); /* serial - use random */
+
+	*aptr = a;
+}
+
+static int rwrap_fake_a_query(const char *key,
+			      const char *value,
+			      unsigned char *answer,
+			      size_t anslen)
+{
+	unsigned char *a = answer;
+
+	rwrap_fake_header(&a);
+
+	return 0;
+}
+
+static int rwrap_fake_aaaa_query(const char *key,
+				 const char *value,
+				 unsigned char *answer,
+				 size_t anslen)
+{
+	return 0;
+}
+
+#define RESOLV_MATCH(line, name) \
+	(strncmp(line, name, sizeof(name) - 1) == 0 && \
+	(line[sizeof(name) - 1] == ' ' || \
+	 line[sizeof(name) - 1] == '\t'))
+
+#define NEXT_KEY(buf, key) do {			\
+	(key) = strpbrk(buf, " \t");		\
+	if ((key)) {				\
+		*(key) = '\0';			\
+		(key)++;			\
+	}					\
+	while ((key) && (isblank(*(key)))) (key)++;	\
+} while(0);
+
+
+/* Reads in a file in the following format:
+ * TYPE RDATA
+ *
+ * Malformed entried are silently skipped.
+ * Allocates answer buffer of size anslen that has to be freed after use.
+ */
+static int rwrap_res_fake_hosts(const char *hostfile,
+				const char *query,
+				int class,
+				int type,
+				unsigned char *answer,
+				size_t anslen)
+{
+	FILE *fp;
+	char buf[BUFSIZ];
+	int rv;
+
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "Searching in fake hosts file %s\n", hostfile);
+
+	fp = fopen(hostfile, "r");
+	if (fp == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Opening %s failed: %s",
+			  hostfile, strerror(errno));
+		return -1;
+	}
+
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
+		char *rec_type;
+		char *key;
+		char *value;
+		char *q;
+
+		rec_type = buf;
+		key = value = NULL;
+
+		NEXT_KEY(rec_type, key);
+		NEXT_KEY(key, value);
+
+		q = value;
+		while(q[0] != '\n' && q[0] != '\0') q++;
+		q[0] = '\0';
+
+		if (key == NULL || value == NULL) {
+			RWRAP_LOG(RWRAP_LOG_WARN,
+				"Malformed line: not enough parts, use \"rec_type key data\n"
+				"For example \"A cwrap.org 10.10.10.10\"");
+			continue;
+		}
+
+		if (RESOLV_MATCH(rec_type, "A")) {
+			rv = rwrap_fake_a_query(key, value, answer, anslen);
+		} else if (RESOLV_MATCH(rec_type, "AAAA")) {
+			rv = rwrap_fake_aaaa_query(key, value, answer, anslen);
+		} else {
+			RWRAP_LOG(RWRAP_LOG_WARN,
+				"Unknown key");
+			continue;
+		}
+
+	}
+
+	return rv;
+}
 /*********************************************************
  * SWRAP LOADING LIBC FUNCTIONS
  *********************************************************/
@@ -443,11 +555,6 @@ static int libc_res_nsearch(struct __res_state *state,
  *   RES_HELPER
  ***************************************************************************/
 
-#define RESOLV_MATCH(line, name) \
-	(strncmp(line, name, sizeof(name) - 1) == 0 && \
-	(line[sizeof(name) - 1] == ' ' || \
-	 line[sizeof(name) - 1] == '\t'))
-
 static int rwrap_parse_resolv_conf(struct __res_state *state,
 				   const char *resolv_conf)
 {
@@ -670,6 +777,7 @@ static int rwrap_res_nquery(struct __res_state *state,
 			    int anslen)
 {
 	int rc;
+	const char *fake_hosts;
 #ifndef NDEBUG
 	int i;
 #endif
@@ -688,7 +796,13 @@ static int rwrap_res_nquery(struct __res_state *state,
 	}
 #endif
 
-	rc = libc_res_nquery(state, dname, class, type, answer, anslen);
+	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
+	if (fake_hosts != NULL) {
+		rc = rwrap_res_fake_hosts(fake_hosts, dname, class, type, answer, anslen);
+	} else {
+		rc = libc_res_nquery(state, dname, class, type, answer, anslen);
+	}
+
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "The returned response length is: %d",
@@ -785,6 +899,7 @@ static int rwrap_res_nsearch(struct __res_state *state,
 			     int anslen)
 {
 	int rc;
+	const char *fake_hosts;
 #ifndef NDEBUG
 	int i;
 #endif
@@ -803,7 +918,12 @@ static int rwrap_res_nsearch(struct __res_state *state,
 	}
 #endif
 
-	rc = libc_res_nsearch(state, dname, class, type, answer, anslen);
+	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
+	if (fake_hosts != NULL) {
+		rc = rwrap_res_fake_hosts(fake_hosts, dname, class, type, answer, anslen);
+	} else {
+		rc = libc_res_nsearch(state, dname, class, type, answer, anslen);
+	}
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "The returned response length is: %d",
