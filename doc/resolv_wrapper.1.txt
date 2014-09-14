@@ -39,6 +39,15 @@ debug symbols.
 - 2 = DEBUG
 - 3 = TRACE
 
+*RESOLV_WRAPPER_HOSTS*::
+
+This environment variable is used for DNS faking. It must point to a
+hosts-like text file that specifies fake records for custom queries. The
+format of the file is:
+TYPE	RECORD_NAME RECORD_VALUE
+For example:
+A	www.cwrap.org	127.0.0.10
+
 EXAMPLE
 -------
 

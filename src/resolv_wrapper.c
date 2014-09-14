@@ -60,6 +60,10 @@
 #define DESTRUCTOR_ATTRIBUTE
 #endif /* HAVE_DESTRUCTOR_ATTRIBUTE */
 
+#ifndef RWRAP_DEFAULT_FAKE_TTL
+#define RWRAP_DEFAULT_FAKE_TTL 600
+#endif  /* RWRAP_DEFAULT_FAKE_TTL */
+
 enum rwrap_dbglvl_e {
 	RWRAP_LOG_ERROR = 0,
 	RWRAP_LOG_WARN,
@@ -119,6 +123,305 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	}
 }
 #endif /* NDEBUG RWRAP_LOG */
+
+
+/* Prepares a fake header with a single response. Advances header_blob */
+static ssize_t rwrap_fake_header(uint8_t **header_blob, int answers)
+{
+	uint8_t *hb;
+	HEADER *h;
+
+	hb = *header_blob;
+	memset(hb, 0, NS_HFIXEDSZ);
+
+	h = (HEADER *) hb;
+	h->id = res_randomid();		/* random query ID */
+	h->qr = htons(1);		/* response flag */
+	h->rd = htons(1);		/* recursion desired */
+	h->ra = htons(1);		/* resursion available */
+
+	h->qdcount = htons(1);		/* no. of questions */
+	h->ancount = htons(answers);	/* no. of answers */
+
+	hb += NS_HFIXEDSZ;		/* move past the header */
+	*header_blob = hb;
+
+	return NS_HFIXEDSZ;
+}
+
+static ssize_t rwrap_fake_question(const char *question,
+				   uint16_t type,
+				   uint8_t **question_ptr,
+				   size_t anslen)
+{
+	uint8_t *qb = *question_ptr;
+	int n;
+
+	n = ns_name_compress(question, qb, anslen, NULL, NULL);
+	if (n < 0) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to compress [%s]\n", question);
+		return -1;
+	}
+
+	qb += n;
+	NS_PUT16(type, qb);
+	NS_PUT16(ns_c_in, qb);
+
+	*question_ptr = qb;
+	return n + 2 * sizeof(uint16_t);
+}
+
+static ssize_t rwrap_fake_rdata_common(uint16_t type,
+				       size_t rdata_size,
+				       const char *key,
+				       size_t remaining,
+				       uint8_t **rdata_ptr)
+{
+	uint8_t *rd = *rdata_ptr;
+	ssize_t written = 0;
+
+	written = ns_name_compress(key, rd, remaining, NULL, NULL);
+	if (written < 0) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to compress [%s]\n", key);
+		return -1;
+	}
+	rd += written;
+	remaining -= written;
+
+	if (remaining < 3 * sizeof(uint16_t) + sizeof(uint32_t)) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small\n");
+		return -1;
+	}
+
+	NS_PUT16(type, rd);
+	NS_PUT16(ns_c_in, rd);
+	NS_PUT32(RWRAP_DEFAULT_FAKE_TTL, rd);
+	NS_PUT16(rdata_size, rd);
+
+	if (remaining < rdata_size) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small\n");
+		return -1;
+	}
+
+	*rdata_ptr = rd;
+	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t);
+}
+
+static ssize_t rwrap_fake_common(uint16_t type,
+				 const char *question,
+				 size_t rdata_size,
+				 uint8_t **answer_ptr,
+				 size_t anslen)
+{
+	uint8_t *a = *answer_ptr;
+	ssize_t written;
+	size_t remaining;
+
+	remaining = anslen;
+	written = rwrap_fake_header(&a, rdata_size > 0 ? 1 : 0);
+	remaining -= written;
+
+	written = rwrap_fake_question(question, type, &a, remaining);
+	if (written < 0) {
+		return -1;
+	}
+	remaining -= written;
+
+	/* rdata_size = 0 denotes an empty answer */
+	if (rdata_size > 0) {
+		written = rwrap_fake_rdata_common(type, rdata_size, question,
+						remaining, &a);
+		if (written < 0) {
+			return -1;
+		}
+	}
+
+	*answer_ptr = a;
+	return written;
+}
+
+static int rwrap_fake_a(const char *key,
+			const char *value,
+			uint8_t *answer_ptr,
+			size_t anslen)
+{
+	uint8_t *a = answer_ptr;
+	struct in_addr a_rec;
+	int rc;
+	int ok;
+
+	if (value == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+		return -1;
+	}
+
+	rc = rwrap_fake_common(ns_t_a, key, sizeof(a_rec), &a, anslen);
+	if (rc < 0) {
+		return -1;
+	}
+
+	ok = inet_pton(AF_INET, value, &a_rec);
+	if (!ok) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to convert [%s] to binary\n", value);
+		return -1;
+	}
+	memcpy(a, &a_rec, sizeof(struct in_addr));
+
+	return 0;
+}
+
+static int rwrap_fake_aaaa(const char *key,
+			   const char *value,
+			   uint8_t *answer,
+			   size_t anslen)
+{
+	uint8_t *a = answer;
+	struct in6_addr aaaa_rec;
+	int rc;
+	int ok;
+
+	if (value == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+		return -1;
+	}
+
+	rc = rwrap_fake_common(ns_t_aaaa, key, sizeof(aaaa_rec), &a, anslen);
+	if (rc < 0) {
+		return -1;
+	}
+
+	ok = inet_pton(AF_INET6, value, &aaaa_rec);
+	if (!ok) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Failed to convert [%s] to binary\n", value);
+		return -1;
+	}
+	memcpy(a, &aaaa_rec, sizeof(struct in6_addr));
+
+	return 0;
+}
+
+static int rwrap_fake_empty_query(const char *key,
+				  uint16_t type,
+				  uint8_t *answer,
+				  size_t anslen)
+{
+	int rc;
+
+	rc = rwrap_fake_common(type, key, 0, &answer, anslen);
+	if (rc < 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+#define RESOLV_MATCH(line, name) \
+	(strncmp(line, name, sizeof(name) - 1) == 0 && \
+	(line[sizeof(name) - 1] == ' ' || \
+	 line[sizeof(name) - 1] == '\t'))
+
+#define NEXT_KEY(buf, key) do {			\
+	(key) = strpbrk(buf, " \t");		\
+	if ((key) != NULL) {			\
+		(key)[0] = '\0';		\
+		(key)++;			\
+	}					\
+	while ((key) != NULL			\
+	       && (isblank((int)(key)[0]))) {	\
+		(key)++;			\
+	}					\
+} while(0);
+
+#define TYPE_MATCH(type, ns_type, rec_type, str_type, key, query) \
+	((type) == (ns_type) && \
+	 (strncmp((rec_type), (str_type), sizeof(str_type)) == 0) && \
+	 (strcmp(key, query)) == 0)
+
+
+/* Reads in a file in the following format:
+ * TYPE RDATA
+ *
+ * Malformed entried are silently skipped.
+ * Allocates answer buffer of size anslen that has to be freed after use.
+ */
+static int rwrap_res_fake_hosts(const char *hostfile,
+				const char *query,
+				int type,
+				unsigned char *answer,
+				size_t anslen)
+{
+	FILE *fp;
+	char buf[BUFSIZ];
+	int rc = ENOENT;
+	char *key = NULL;
+	char *value = NULL;
+
+	RWRAP_LOG(RWRAP_LOG_TRACE,
+		  "Searching in fake hosts file %s\n", hostfile);
+
+	fp = fopen(hostfile, "r");
+	if (fp == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Opening %s failed: %s",
+			  hostfile, strerror(errno));
+		return -1;
+	}
+
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
+		char *rec_type;
+		char *q;
+
+		rec_type = buf;
+		key = value = NULL;
+
+		NEXT_KEY(rec_type, key);
+		NEXT_KEY(key, value);
+
+		q = value;
+		while(q[0] != '\n' && q[0] != '\0') {
+			q++;
+		}
+		q[0] = '\0';
+
+		if (key == NULL || value == NULL) {
+			RWRAP_LOG(RWRAP_LOG_WARN,
+				"Malformed line: not enough parts, use \"rec_type key data\n"
+				"For example \"A cwrap.org 10.10.10.10\"");
+			continue;
+		}
+
+		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query)) {
+			rc = rwrap_fake_a(key, value, answer, anslen);
+			break;
+		} else if (TYPE_MATCH(type, ns_t_aaaa,
+				      rec_type, "AAAA", key, query)) {
+			rc = rwrap_fake_aaaa(key, value, answer, anslen);
+			break;
+		}
+	}
+
+	switch (rc) {
+	case 0:
+		RWRAP_LOG(RWRAP_LOG_TRACE,
+				"Successfully faked answer for [%s]\n", query);
+		break;
+	case -1:
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+				"Error faking answer for [%s]\n", query);
+		break;
+	case ENOENT:
+		RWRAP_LOG(RWRAP_LOG_TRACE,
+				"Record for [%s] not found\n", query);
+		rc = rwrap_fake_empty_query(key, type, answer, anslen);
+		break;
+	}
+
+	return rc;
+}
 
 /*********************************************************
  * SWRAP LOADING LIBC FUNCTIONS
@@ -408,11 +711,6 @@ static int libc_res_nsearch(struct __res_state *state,
  *   RES_HELPER
  ***************************************************************************/
 
-#define RESOLV_MATCH(line, name) \
-	(strncmp(line, name, sizeof(name) - 1) == 0 && \
-	(line[sizeof(name) - 1] == ' ' || \
-	 line[sizeof(name) - 1] == '\t'))
-
 static int rwrap_parse_resolv_conf(struct __res_state *state,
 				   const char *resolv_conf)
 {
@@ -627,6 +925,7 @@ static int rwrap_res_nquery(struct __res_state *state,
 			    int anslen)
 {
 	int rc;
+	const char *fake_hosts;
 #ifndef NDEBUG
 	int i;
 #endif
@@ -645,7 +944,13 @@ static int rwrap_res_nquery(struct __res_state *state,
 	}
 #endif
 
-	rc = libc_res_nquery(state, dname, class, type, answer, anslen);
+	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
+	if (fake_hosts != NULL) {
+		rc = rwrap_res_fake_hosts(fake_hosts, dname, type, answer, anslen);
+	} else {
+		rc = libc_res_nquery(state, dname, class, type, answer, anslen);
+	}
+
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "The returned response length is: %d",
@@ -729,6 +1034,7 @@ static int rwrap_res_nsearch(struct __res_state *state,
 			     int anslen)
 {
 	int rc;
+	const char *fake_hosts;
 #ifndef NDEBUG
 	int i;
 #endif
@@ -747,7 +1053,12 @@ static int rwrap_res_nsearch(struct __res_state *state,
 	}
 #endif
 
-	rc = libc_res_nsearch(state, dname, class, type, answer, anslen);
+	fake_hosts = getenv("RESOLV_WRAPPER_HOSTS");
+	if (fake_hosts != NULL) {
+		rc = rwrap_res_fake_hosts(fake_hosts, dname, type, answer, anslen);
+	} else {
+		rc = libc_res_nsearch(state, dname, class, type, answer, anslen);
+	}
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
 		  "The returned response length is: %d",
