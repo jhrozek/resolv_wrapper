@@ -106,6 +106,7 @@ static void test_res_ninit(void **state)
 	rv = setenv("RESOLV_WRAPPER_CONF", test_state->resolv_conf_path, 1);
 	assert_int_equal(rv, 0);
 
+	memset(&dnsstate, 0, sizeof(dnsstate));
 	rv = res_ninit(&dnsstate);
 	unsetenv("RESOLV_WRAPPER_CONF");
 	assert_int_equal(rv, 0);
@@ -160,6 +161,7 @@ static void test_res_ninit_enoent(void **state)
 	assert_int_equal(rv, 0);
 
 	/* Just make sure we don't crash, error is fine */
+	memset(&dnsstate, 0, sizeof(dnsstate));
 	rv = res_ninit(&dnsstate);
 	unsetenv("RESOLV_WRAPPER_CONF");
 	assert_int_equal(rv, -1);
