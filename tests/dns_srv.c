@@ -81,16 +81,16 @@
 
 /* The macros below are taken from c-ares */
 #define DNS__16BIT(p)  ((unsigned short)((unsigned int) 0xffff & \
-						 (((unsigned int)((unsigned char)(p)[0]) << 8U) | \
-						  ((unsigned int)((unsigned char)(p)[1])))))
+			(((unsigned int)((unsigned char)(p)[0]) << 8U) | \
+			((unsigned int)((unsigned char)(p)[1])))))
 
 #define DNS__SET16BIT(p, v)  (((p)[0] = (unsigned char)(((v) >> 8) & 0xff)), \
-							  ((p)[1] = (unsigned char)((v) & 0xff)))
+			      ((p)[1] = (unsigned char)((v) & 0xff)))
 
 #define DNS__SET32BIT(p, v)  (((p)[0] = (unsigned char)(((v) >> 24) & 0xff)), \
-							  ((p)[1] = (unsigned char)(((v) >> 16) & 0xff)), \
-							  ((p)[2] = (unsigned char)(((v) >> 8) & 0xff)), \
-							  ((p)[3] = (unsigned char)((v) & 0xff)));
+			      ((p)[1] = (unsigned char)(((v) >> 16) & 0xff)), \
+			      ((p)[2] = (unsigned char)(((v) >> 8) & 0xff)), \
+			      ((p)[3] = (unsigned char)((v) & 0xff)));
 
 /* Macros for parsing a DNS header */
 #define DNS_HEADER_QID(h)		DNS__16BIT(h)

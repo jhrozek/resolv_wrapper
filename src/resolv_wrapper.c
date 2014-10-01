@@ -210,11 +210,14 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 #ifdef HAVE_LIBRESOLV
 		handle = rwrap.libresolv_handle;
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libresolv.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			rwrap.libresolv_handle = handle;
@@ -232,11 +235,14 @@ static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 		}
 #endif
 		if (handle == NULL) {
-			for (handle = NULL, i = 10; handle == NULL && i >= 0; i--) {
+			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libc.so.%d", i);
 				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
 			}
 
 			rwrap.libc_handle = handle;
