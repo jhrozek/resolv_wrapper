@@ -367,6 +367,77 @@ static int rwrap_fake_srv(const char *key,
 	return 0;
 }
 
+static int rwrap_fake_soa(const char *key,
+			  const char *value,
+			  uint8_t *answer,
+			  size_t anslen)
+{
+	uint8_t *a = answer;
+	int rv;
+	const char *nameserver;
+	char *mailbox;
+	char *str_serial;
+	char *str_refresh;
+	char *str_retry;
+	char *str_expire;
+	char *str_minimum;
+	size_t rdata_size;
+	unsigned char nameser_compressed[MAXDNAME];
+	ssize_t compressed_ns_len;
+	unsigned char mailbox_compressed[MAXDNAME];
+	ssize_t compressed_mb_len;
+
+	/* parse the value into nameserver, mailbox, serial, refresh,
+	 * retry, expire, minimum and check the validity
+	 */
+	nameserver = value;
+	NEXT_KEY(nameserver, mailbox);
+	NEXT_KEY(mailbox, str_serial);
+	NEXT_KEY(str_serial, str_refresh);
+	NEXT_KEY(str_refresh, str_retry);
+	NEXT_KEY(str_retry, str_expire);
+	NEXT_KEY(str_expire, str_minimum);
+	if (nameserver == NULL || mailbox == NULL || str_serial == NULL ||
+	    str_refresh == NULL || str_retry == NULL || str_expire == NULL ||
+	    str_minimum == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed SOA entry [%s]\n", value);
+		return -1;
+	}
+	rdata_size = 5 * sizeof(uint16_t);
+
+	compressed_ns_len = ns_name_compress(nameserver, nameser_compressed,
+					     MAXDNAME, NULL, NULL);
+	if (compressed_ns_len < 0) {
+		return -1;
+	}
+	rdata_size += compressed_ns_len;
+
+	compressed_mb_len = ns_name_compress(mailbox, mailbox_compressed,
+					     MAXDNAME, NULL, NULL);
+	if (compressed_mb_len < 0) {
+		return -1;
+	}
+	rdata_size += compressed_mb_len;
+
+	rv = rwrap_fake_common(ns_t_soa, key, rdata_size, &a, anslen);
+	if (rv < 0) {
+		return -1;
+	}
+
+	memcpy(a, nameser_compressed, compressed_ns_len);
+	a += compressed_ns_len;
+	memcpy(a, mailbox_compressed, compressed_mb_len);
+	a += compressed_mb_len;
+	NS_PUT32(atoi(str_serial), a);
+	NS_PUT32(atoi(str_refresh), a);
+	NS_PUT32(atoi(str_retry), a);
+	NS_PUT32(atoi(str_expire), a);
+	NS_PUT32(atoi(str_minimum), a);
+
+	return 0;
+}
+
 static int rwrap_fake_empty_query(const char *key,
 				  uint16_t type,
 				  uint8_t *answer,
@@ -455,6 +526,10 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		} else if (TYPE_MATCH(type, ns_t_srv,
 				      rec_type, "SRV", key, query)) {
 			rc = rwrap_fake_srv(key, value, answer, anslen);
+			break;
+		} else if (TYPE_MATCH(type, ns_t_soa,
+				      rec_type, "SOA", key, query)) {
+			rc = rwrap_fake_soa(key, value, answer, anslen);
 			break;
 		}
 	}

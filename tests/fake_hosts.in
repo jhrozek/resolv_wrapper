@@ -1,3 +1,4 @@
 A cwrap.org 127.0.0.21
 AAAA cwrap6.org 2a00:1450:4013:c01::63
 SRV _ldap._tcp.cwrap.org 1 5 389 ldap.cwrap.org
+SOA cwrap.org ns1.cwrap.org admin.cwrap.org 2014100457 3600 300 1814400 600
