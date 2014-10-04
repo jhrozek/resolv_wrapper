@@ -478,6 +478,39 @@ static int rwrap_fake_soa(const char *key,
 	return 0;
 }
 
+static int rwrap_fake_cname(const char *key,
+			    const char *value,
+			    uint8_t *answer,
+			    size_t anslen)
+{
+	uint8_t *a = answer;
+	int rv;
+	unsigned char hostname_compressed[MAXDNAME];
+	ssize_t rdata_size;
+
+	if (value == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Malformed record, no value!\n");
+		return -1;
+	}
+
+	/* Prepare the data to write */
+	rdata_size = ns_name_compress(value,
+				      hostname_compressed, MAXDNAME,
+				      NULL, NULL);
+	if (rdata_size < 0) {
+		return -1;
+	}
+
+	rv = rwrap_fake_common(ns_t_cname, key, rdata_size, &a, anslen);
+	if (rv < 0) {
+		return -1;
+	}
+
+	memcpy(a, hostname_compressed, rdata_size);
+
+	return 0;
+}
+
 static int rwrap_fake_empty_query(const char *key,
 				  uint16_t type,
 				  uint8_t *answer,
@@ -570,6 +603,10 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		} else if (TYPE_MATCH(type, ns_t_soa,
 				      rec_type, "SOA", key, query)) {
 			rc = rwrap_fake_soa(key, value, answer, anslen);
+			break;
+		} else if (TYPE_MATCH(type, ns_t_cname,
+				      rec_type, "CNAME", key, query)) {
+			rc = rwrap_fake_cname(key, value, answer, anslen);
 			break;
 		}
 	}
