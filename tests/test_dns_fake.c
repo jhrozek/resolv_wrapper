@@ -270,6 +270,76 @@ static void test_res_fake_srv_query_minimal(void **state)
 	assert_string_equal(hostname, "krb5.cwrap.org");
 }
 
+static void test_res_fake_soa_query(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+	const uint8_t *rrdata;
+	char nameser[MAXDNAME];
+	char admin[MAXDNAME];
+	int serial;
+	int refresh;
+	int retry;
+	int expire;
+	int minimum;
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_soa,
+			answer, ANSIZE);
+	assert_int_not_equal(rv, -1);
+
+	ns_initparse(answer, 256, &handle);
+
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type SOA and have the data as in the fake
+	 * hosts file
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_soa);
+
+	rrdata = ns_rr_rdata(rr);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				nameser, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+	rrdata += rv;
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				admin, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+	rrdata += rv;
+
+	NS_GET32(serial, rrdata);
+	NS_GET32(refresh, rrdata);
+	NS_GET32(retry, rrdata);
+	NS_GET32(expire, rrdata);
+	NS_GET32(minimum, rrdata);
+
+	assert_string_equal(nameser, "ns1.cwrap.org");
+	assert_string_equal(admin, "admin.cwrap.org");
+	assert_int_equal(serial, 2014100457);
+	assert_int_equal(refresh, 3600);
+	assert_int_equal(retry, 300);
+	assert_int_equal(expire, 1814400);
+	assert_int_equal(minimum, 600);
+}
+
+
 int main(void)
 {
 	int rc;
@@ -281,6 +351,7 @@ int main(void)
 		unit_test(test_res_fake_aaaa_query_notfound),
 		unit_test(test_res_fake_srv_query),
 		unit_test(test_res_fake_srv_query_minimal),
+		unit_test(test_res_fake_soa_query),
 	};
 
 	rc = run_tests(tests);
