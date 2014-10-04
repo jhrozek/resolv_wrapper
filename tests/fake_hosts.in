@@ -1,2 +1,4 @@
 A cwrap.org 127.0.0.21
 AAAA cwrap6.org 2a00:1450:4013:c01::63
+SRV _ldap._tcp.cwrap.org ldap.cwrap.org 389 1 5
+SRV _krb5._tcp.cwrap.org krb5.cwrap.org 88

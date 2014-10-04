@@ -79,6 +79,18 @@ enum rwrap_dbglvl_e {
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define RWRAP_LOG(dbglvl, ...) rwrap_log((dbglvl), __func__, __VA_ARGS__)
 
+#define NEXT_KEY(buf, key) do {					\
+	(key) = (buf) ? strpbrk((buf), " \t") : NULL;		\
+	if ((key) != NULL) {					\
+		(key)[0] = '\0';				\
+		(key)++;					\
+	}							\
+	while ((key) != NULL					\
+	       && (isblank((int)(key)[0]))) {			\
+		(key)++;					\
+	}							\
+} while(0);
+
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 		      const char *func,
 		      const char *format, ...)
@@ -326,6 +338,73 @@ static int rwrap_fake_aaaa(const char *key,
 	return 0;
 }
 
+/*
+ * Priority and weight can be omitted from the hosts file, but need to be part
+ * of the output
+ */
+#define DFL_SRV_PRIO	1
+#define DFL_SRV_WEIGHT	100
+
+static int rwrap_fake_srv(const char *key,
+			  const char *value,
+			  uint8_t *answer,
+			  size_t anslen)
+{
+	uint8_t *a = answer;
+	int rv;
+	size_t rdata_size;
+	char *str_prio;
+	char *str_weight;
+	char *str_port;
+	const char *hostname;
+	unsigned char hostname_compressed[MAXDNAME];
+	ssize_t compressed_len;
+
+	/*
+	 * Parse the value into priority, weight, port and hostname
+	 * and check the validity.
+	 */
+	hostname = value;
+	NEXT_KEY(hostname, str_port);
+	NEXT_KEY(str_port, str_prio);
+	NEXT_KEY(str_prio, str_weight);
+	if (str_port == NULL || hostname == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed SRV entry [%s]\n", value);
+		return -1;
+	}
+	rdata_size = 3 * sizeof(uint16_t);
+
+	/* Prepare the data to write */
+	compressed_len = ns_name_compress(hostname,
+					  hostname_compressed, MAXDNAME,
+					  NULL, NULL);
+	if (compressed_len < 0) {
+		return -1;
+	}
+	rdata_size += compressed_len;
+
+	rv = rwrap_fake_common(ns_t_srv, key, rdata_size, &a, anslen);
+	if (rv < 0) {
+		return -1;
+	}
+
+	if (str_prio) {
+		NS_PUT16(atoi(str_prio), a);
+	} else {
+		NS_PUT16(DFL_SRV_PRIO, a);
+	}
+	if (str_weight) {
+		NS_PUT16(atoi(str_weight), a);
+	} else {
+		NS_PUT16(DFL_SRV_WEIGHT, a);
+	}
+	NS_PUT16(atoi(str_port), a);
+	memcpy(a, hostname_compressed, compressed_len);
+
+	return 0;
+}
+
 static int rwrap_fake_empty_query(const char *key,
 				  uint16_t type,
 				  uint8_t *answer,
@@ -345,18 +424,6 @@ static int rwrap_fake_empty_query(const char *key,
 	(strncmp(line, name, sizeof(name) - 1) == 0 && \
 	(line[sizeof(name) - 1] == ' ' || \
 	 line[sizeof(name) - 1] == '\t'))
-
-#define NEXT_KEY(buf, key) do {			\
-	(key) = strpbrk(buf, " \t");		\
-	if ((key) != NULL) {			\
-		(key)[0] = '\0';		\
-		(key)++;			\
-	}					\
-	while ((key) != NULL			\
-	       && (isblank((int)(key)[0]))) {	\
-		(key)++;			\
-	}					\
-} while(0);
 
 #define TYPE_MATCH(type, ns_type, rec_type, str_type, key, query) \
 	((type) == (ns_type) && \
@@ -422,6 +489,10 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		} else if (TYPE_MATCH(type, ns_t_aaaa,
 				      rec_type, "AAAA", key, query)) {
 			rc = rwrap_fake_aaaa(key, value, answer, anslen);
+			break;
+		} else if (TYPE_MATCH(type, ns_t_srv,
+				      rec_type, "SRV", key, query)) {
+			rc = rwrap_fake_srv(key, value, answer, anslen);
 			break;
 		}
 	}
