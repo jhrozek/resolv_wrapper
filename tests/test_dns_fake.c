@@ -185,8 +185,8 @@ static void test_res_fake_srv_query(void **state)
 
 	ns_initparse(answer, 256, &handle);
 	/* The query must finish w/o an error, have one answer and the answer
-	 * must be a parseable RR of type A and have the address that our
-	 * test server sends
+	 * must be a parseable RR of type SRV and have the priority, weight,
+	 * port and hostname as in the fake hosts file
 	 */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
