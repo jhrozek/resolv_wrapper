@@ -530,7 +530,7 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 				unsigned char *answer,
 				size_t anslen)
 {
-	FILE *fp;
+	FILE *fp = NULL;
 	char buf[BUFSIZ];
 	int rc = ENOENT;
 	char *key = NULL;
@@ -608,6 +608,7 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		break;
 	}
 
+	fclose(fp);
 	return rc;
 }
 
