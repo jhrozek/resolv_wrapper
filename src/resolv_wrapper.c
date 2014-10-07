@@ -138,10 +138,20 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 
 
 /* Prepares a fake header with a single response. Advances header_blob */
-static ssize_t rwrap_fake_header(uint8_t **header_blob, int answers)
+static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
+				 size_t rdata_size)
 {
 	uint8_t *hb;
 	HEADER *h;
+	int answers;
+
+	/* If rdata_size is zero, the answer is empty */
+	answers = rdata_size > 0 ? 1 : 0;
+
+	if (remaining < NS_HFIXEDSZ) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small!\n");
+		return -1;
+	}
 
 	hb = *header_blob;
 	memset(hb, 0, NS_HFIXEDSZ);
@@ -164,12 +174,12 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, int answers)
 static ssize_t rwrap_fake_question(const char *question,
 				   uint16_t type,
 				   uint8_t **question_ptr,
-				   size_t anslen)
+				   size_t remaining)
 {
 	uint8_t *qb = *question_ptr;
 	int n;
 
-	n = ns_name_compress(question, qb, anslen, NULL, NULL);
+	n = ns_name_compress(question, qb, remaining, NULL, NULL);
 	if (n < 0) {
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Failed to compress [%s]\n", question);
@@ -177,6 +187,13 @@ static ssize_t rwrap_fake_question(const char *question,
 	}
 
 	qb += n;
+	remaining -= n;
+
+	if (remaining < 2 * sizeof(uint16_t)) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Buffer too small!\n");
+		return -1;
+	}
+
 	NS_PUT16(type, qb);
 	NS_PUT16(ns_c_in, qb);
 
@@ -232,7 +249,11 @@ static ssize_t rwrap_fake_common(uint16_t type,
 	size_t remaining;
 
 	remaining = anslen;
-	written = rwrap_fake_header(&a, rdata_size > 0 ? 1 : 0);
+
+	written = rwrap_fake_header(&a, remaining, rdata_size);
+	if (written < 0) {
+		return -1;
+	}
 	remaining -= written;
 
 	written = rwrap_fake_question(question, type, &a, remaining);
