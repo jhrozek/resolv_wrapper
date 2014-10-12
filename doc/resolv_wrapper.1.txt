@@ -4,7 +4,7 @@ resolv_wrapper(1)
 NAME
 ----
 
-resolv_wrapper - A wrapper for the dns resolving with our own resolv.conf.
+resolv_wrapper - A wrapper for dns name resolving or dns faking.
 
 SYNOPSIS
 --------
@@ -17,8 +17,11 @@ DESCRIPTION
 resolv_wrapper makes it possible on most UNIX platforms to contact your own DNS
 implmentation in your test environment. It requires socket_wrapper to be able
 to contact it.
+If it doesn't work on a special platform the wrapper is able to fake DNS queries
+and return valid responses to your application.
 
 - Redirects name queries to the nameservers specified in your resolv.conf
+- Can fake DNS queries using a simple formatted DNS hosts file.
 
 ENVIRONMENT VARIABLES
 ---------------------
@@ -28,6 +31,21 @@ ENVIRONMENT VARIABLES
 This is used to specify the resolv.conf to use. The format of the resolv.conf
 file is defined in the manpage 'resolv.conf(5)'. Currently only the *namserver*
 directive is supported.
+
+*RESOLV_WRAPPER_HOSTS*::
+
+This environment variable is used for faking DNS queries. It must point to a
+hosts-like text file that specifies fake records for custom queries. The
+format of the file looks like this:
+
+    TYPE    RECORD_NAME RECORD_VALUE
+
+For example:
+
+    A       dc.cwrap.org 127.0.0.10
+    AAAA    dc.cwrap.org fd00::5357:5f0a
+    CNAME   kerberos.cwrap.org dc.cwrap.org
+    SRV     _kerberos._tcp.cwrap.org kerberos.cwrap.org 88
 
 *RESOLV_WRAPPER_DEBUGLEVEL*::
 
@@ -39,15 +57,6 @@ debug symbols.
 - 1 = WARNING
 - 2 = DEBUG
 - 3 = TRACE
-
-*RESOLV_WRAPPER_HOSTS*::
-
-This environment variable is used for DNS faking. It must point to a
-hosts-like text file that specifies fake records for custom queries. The
-format of the file is:
-TYPE	RECORD_NAME RECORD_VALUE
-For example:
-A	www.cwrap.org	127.0.0.10
 
 EXAMPLE
 -------

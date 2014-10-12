@@ -28,13 +28,13 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-resolv_wrapper \- A wrapper for the dns resolving with our own resolv\&.conf\&.
+resolv_wrapper \- A wrapper for dns name resolving or dns faking\&.
 .SH "SYNOPSIS"
 .sp
 LD_PRELOAD=libresolv_wrapper\&.so RESOLV_WRAPPER_CONF="/path/to/resolv\&.conf" \fB\&./myapplication\fR
 .SH "DESCRIPTION"
 .sp
-resolv_wrapper makes it possible on most UNIX platforms to contact your own DNS implmentation in your test environment\&. It requires socket_wrapper to be able to contact it\&.
+resolv_wrapper makes it possible on most UNIX platforms to contact your own DNS implmentation in your test environment\&. It requires socket_wrapper to be able to contact it\&. If it doesn\(cqt work on a special platform the wrapper is able to fake DNS queries and return valid responses to your application\&.
 .sp
 .RS 4
 .ie n \{\
@@ -46,6 +46,17 @@ resolv_wrapper makes it possible on most UNIX platforms to contact your own DNS 
 .\}
 Redirects name queries to the nameservers specified in your resolv\&.conf
 .RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Can fake DNS queries using a simple formatted DNS hosts file\&.
+.RE
 .SH "ENVIRONMENT VARIABLES"
 .PP
 \fBRESOLV_WRAPPER_CONF\fR
@@ -55,6 +66,36 @@ This is used to specify the resolv\&.conf to use\&. The format of the resolv\&.c
 \fBnamserver\fR
 directive is supported\&.
 .RE
+.PP
+\fBRESOLV_WRAPPER_HOSTS\fR
+.RS 4
+This environment variable is used for faking DNS queries\&. It must point to a hosts\-like text file that specifies fake records for custom queries\&. The format of the file looks like this:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+TYPE    RECORD_NAME RECORD_VALUE
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.sp
+For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+A       dc\&.cwrap\&.org 127\&.0\&.0\&.10
+AAAA    dc\&.cwrap\&.org fd00::5357:5f0a
+CNAME   kerberos\&.cwrap\&.org dc\&.cwrap\&.org
+SRV     _kerberos\&._tcp\&.cwrap\&.org kerberos\&.cwrap\&.org 88
+.fi
+.if n \{\
+.RE
+.\}
 .PP
 \fBRESOLV_WRAPPER_DEBUGLEVEL\fR
 .RS 4
