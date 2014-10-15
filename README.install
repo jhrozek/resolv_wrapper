@@ -34,7 +34,7 @@ Next, run cmake to configure the build, e.g.
 
 or on a 64 bit red hat system:
 
-  $  cmake -DCMAKE_INSTALL_PREFIX=<prefix> -DLIB_SUFFIX=64 ..
+  $ cmake -DCMAKE_INSTALL_PREFIX=<prefix> -DLIB_SUFFIX=64 ..
 
 The "<prefix>" should be replaced by the intended installation
 target prefix directory, typically /usr or /usr/local.
@@ -62,7 +62,15 @@ and you need to specify
 
   -DUNIT_TESTING=ON
 
-in the cmake run. After running "make",
+in the cmake run.
+
+Note that for unit testing, resolv_wrapper requires socket_wrapper
+to be installed. If socket_wrapper is installed in a non-standard
+location, this can be passed to cmake via
+
+  -Dsocket_wrapper_DIR=<swrap_prefix>/<LIB_SUFFIX>/cmake/socket_wrapper
+
+After running "make",
 
   $ make test
 
