@@ -66,10 +66,10 @@ static void test_res_fake_a_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_a,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error, have one answer and the answer
 	 * must be a parseable RR of type A and have the address that our
 	 * fake hosts file contains
@@ -78,7 +78,8 @@ static void test_res_fake_a_query(void **state)
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
-	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
 	assert_string_equal(addr, "127.0.0.21");
 }
 
@@ -96,10 +97,10 @@ static void test_res_fake_a_query_notfound(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "nosuchentry.org", ns_c_in, ns_t_a,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error and have no answer */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 0);
@@ -121,10 +122,10 @@ static void test_res_fake_aaaa_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "cwrap6.org", ns_c_in, ns_t_aaaa,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error, have one answer and the answer
 	 * must be a parseable RR of type AAAA and have the address that our
 	 * fake hosts file contains
@@ -133,7 +134,8 @@ static void test_res_fake_aaaa_query(void **state)
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_aaaa);
-	assert_non_null(inet_ntop(AF_INET6, ns_rr_rdata(rr), addr, 256));
+	assert_non_null(inet_ntop(AF_INET6, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
 	assert_string_equal(addr, "2a00:1450:4013:c01::63");
 }
 
@@ -151,10 +153,10 @@ static void test_res_fake_aaaa_query_notfound(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "nosuchentry.org", ns_c_in, ns_t_aaaa,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error and have no answer */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 0);
@@ -180,10 +182,10 @@ static void test_res_fake_srv_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "_ldap._tcp.cwrap.org", ns_c_in, ns_t_srv,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
@@ -238,10 +240,10 @@ static void test_res_fake_srv_query_minimal(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "_krb5._tcp.cwrap.org", ns_c_in, ns_t_srv,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
@@ -293,10 +295,10 @@ static void test_res_fake_soa_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_soa,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
@@ -356,10 +358,11 @@ static void test_res_fake_cname_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_cname,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
 	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer

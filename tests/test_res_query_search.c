@@ -78,10 +78,10 @@ static void test_res_query(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nquery(&dnsstate, "www.cwrap.org", ns_c_in, ns_t_a,
-			answer, ANSIZE);
+			answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
 	 * must be a parseable RR of type A and have the address that our
@@ -91,7 +91,8 @@ static void test_res_query(void **state)
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
-	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
 	assert_string_equal(addr, "127.0.10.10");
 
 	res_nclose(&dnsstate);
@@ -113,10 +114,10 @@ static void test_res_search(void **state)
 	assert_int_equal(rv, 0);
 
 	rv = res_nsearch(&dnsstate, "www.cwrap.org", ns_c_in, ns_t_a,
-			 answer, ANSIZE);
+			 answer, sizeof(answer));
 	assert_int_not_equal(rv, -1);
 
-	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
 	/* The query must finish w/o an error, have one answer and the answer
 	 * must be a parseable RR of type A and have the address that our
 	 * test server sends
@@ -125,7 +126,8 @@ static void test_res_search(void **state)
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
-	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
 	assert_string_equal(addr, "127.0.10.10");
 
 	res_nclose(&dnsstate);
