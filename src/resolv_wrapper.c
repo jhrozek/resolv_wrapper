@@ -125,6 +125,10 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 }
 #endif /* NDEBUG RWRAP_LOG */
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+#endif
+
 #define NEXT_KEY(buf, key) do {					\
 	(key) = (buf) ? strpbrk((buf), " \t") : NULL;		\
 	if ((key) != NULL) {					\
@@ -1100,6 +1104,16 @@ int __res_init(void)
 
 static void rwrap_res_nclose(struct __res_state *state)
 {
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
+	int i;
+
+	if (state != NULL) {
+		for (i = 0; i < state->_u._ext.nscount; i++) {
+			SAFE_FREE(state->_u._ext.nsaddrs[i]);
+			state->_u._ext.nssocks[i] = 0;
+		}
+	}
+#endif
 	libc_res_nclose(state);
 }
 

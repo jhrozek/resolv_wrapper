@@ -171,6 +171,8 @@ static void test_res_ninit(void **state)
 	inet_ntop(AF_INET6, &(sa6->sin6_addr), straddr, INET6_ADDRSTRLEN);
 	assert_string_equal(nameservers[2], straddr);
 #endif
+
+	res_nclose(&dnsstate);
 }
 
 static void test_res_ninit_enoent(void **state)
