@@ -93,6 +93,8 @@ static void test_res_query(void **state)
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
 	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
 	assert_string_equal(addr, "127.0.10.10");
+
+	res_nclose(&dnsstate);
 }
 
 static void test_res_search(void **state)
@@ -125,6 +127,8 @@ static void test_res_search(void **state)
 	assert_int_equal(ns_rr_type(rr), ns_t_a);
 	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr), addr, 256));
 	assert_string_equal(addr, "127.0.10.10");
+
+	res_nclose(&dnsstate);
 }
 
 int main(void)
