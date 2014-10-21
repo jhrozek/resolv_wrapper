@@ -984,6 +984,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 
 					sa6 = malloc(sizeof(*sa6));
 					if (sa6 == NULL) {
+						fclose(fp);
 						return -1;
 					}
 
@@ -1023,9 +1024,11 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 		RWRAP_LOG(RWRAP_LOG_ERROR,
 			  "Reading from %s failed",
 			  resolv_conf);
+		fclose(fp);
 		return -1;
 	}
 
+	fclose(fp);
 	return 0;
 }
 
