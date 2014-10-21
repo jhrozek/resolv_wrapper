@@ -970,6 +970,7 @@ static int rwrap_parse_resolv_conf(struct __res_state *state,
 					.sin_family = AF_INET,
 					.sin_addr = a,
 					.sin_port = htons(53),
+					.sin_zero = { 0 },
 				};
 
 				state->nscount++;
