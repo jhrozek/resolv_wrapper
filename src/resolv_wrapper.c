@@ -74,22 +74,10 @@ enum rwrap_dbglvl_e {
 
 #ifdef NDEBUG
 # define RWRAP_LOG(...)
-#else
+#else /* NDEBUG */
 
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define RWRAP_LOG(dbglvl, ...) rwrap_log((dbglvl), __func__, __VA_ARGS__)
-
-#define NEXT_KEY(buf, key) do {					\
-	(key) = (buf) ? strpbrk((buf), " \t") : NULL;		\
-	if ((key) != NULL) {					\
-		(key)[0] = '\0';				\
-		(key)++;					\
-	}							\
-	while ((key) != NULL					\
-	       && (isblank((int)(key)[0]))) {			\
-		(key)++;					\
-	}							\
-} while(0);
 
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 		      const char *func,
@@ -136,6 +124,18 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	}
 }
 #endif /* NDEBUG RWRAP_LOG */
+
+#define NEXT_KEY(buf, key) do {					\
+	(key) = (buf) ? strpbrk((buf), " \t") : NULL;		\
+	if ((key) != NULL) {					\
+		(key)[0] = '\0';				\
+		(key)++;					\
+	}							\
+	while ((key) != NULL					\
+	       && (isblank((int)(key)[0]))) {			\
+		(key)++;					\
+	}							\
+} while(0);
 
 
 /* Prepares a fake header with a single response. Advances header_blob */
