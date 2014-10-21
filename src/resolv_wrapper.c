@@ -163,9 +163,9 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 
 	h = (HEADER *) hb;
 	h->id = res_randomid();		/* random query ID */
-	h->qr = htons(1);		/* response flag */
-	h->rd = htons(1);		/* recursion desired */
-	h->ra = htons(1);		/* resursion available */
+	h->qr = 1;			/* response flag */
+	h->rd = 1;			/* recursion desired */
+	h->ra = 1;			/* resursion available */
 
 	h->qdcount = htons(1);		/* no. of questions */
 	h->ancount = htons(answers);	/* no. of answers */
