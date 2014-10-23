@@ -162,7 +162,7 @@ static void test_res_ninit(void **state)
 	assert_int_equal(dnsstate.nsaddr_list[2].sin_port, htons(53));
 	inet_ntop(AF_INET, &(dnsstate.nsaddr_list[2].sin_addr),
 		  straddr, INET6_ADDRSTRLEN);
-	assert_string_equal(nameservers[2], straddr);
+	assert_string_equal(nameservers[3], straddr);
 #else
 	/* IPv6 */
 	sa6 = dnsstate._u._ext.nsaddrs[0];
