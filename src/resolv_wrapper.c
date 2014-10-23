@@ -832,7 +832,12 @@ static int libc_res_init(void)
 static int libc_res_ninit(struct __res_state *state)
 {
 #if defined(HAVE_RES_NINIT)
+
+#if defined(HAVE_RES_NINIT_IN_LIBRESOLV)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_ninit);
+#else /* HAVE_RES_NINIT_IN_LIBRESOLV */
 	rwrap_load_lib_function(RWRAP_LIBC, res_ninit);
+#endif /* HAVE_RES_NINIT_IN_LIBRESOLV */
 
 	return rwrap.fns.libc_res_ninit(state);
 #elif defined(HAVE___RES_NINIT)
@@ -847,7 +852,12 @@ static int libc_res_ninit(struct __res_state *state)
 static void libc_res_nclose(struct __res_state *state)
 {
 #if defined(HAVE_RES_NCLOSE)
+
+#if defined(HAVE_RES_NCLOSE_IN_LIBRESOLV)
+	rwrap_load_lib_function(RWRAP_LIBRESOLV, res_nclose);
+#else /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
 	rwrap_load_lib_function(RWRAP_LIBC, res_nclose);
+#endif /* HAVE_RES_NCLOSE_IN_LIBRESOLV */
 
 	rwrap.fns.libc_res_nclose(state);
 #elif defined(HAVE___RES_NCLOSE)

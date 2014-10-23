@@ -52,11 +52,14 @@ check_include_file(resolv.h HAVE_RESOLV_H)
 
 # FUNCTIONS
 find_library(RESOLV_LIRBRARY resolv)
-check_library_exists(${RESOLV_LIRBRARY} res_send "" RES_SEND_IN_LIBRESOLV)
-check_library_exists(${RESOLV_LIRBRARY} __res_send "" __RES_SEND_IN_LIBRESOLV)
-if (RESOLV_LIRBRARY AND RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
-    set(HAVE_LIBRESOLV TRUE)
-    set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
+
+if (RESOLV_LIRBRARY)
+    check_library_exists(${RESOLV_LIRBRARY} res_send "" RES_SEND_IN_LIBRESOLV)
+    check_library_exists(${RESOLV_LIRBRARY} __res_send "" __RES_SEND_IN_LIBRESOLV)
+    if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
+        set(HAVE_LIBRESOLV TRUE)
+        set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
+    endif()
 endif()
 
 check_function_exists(res_init HAVE_RES_INIT)
@@ -64,12 +67,18 @@ check_function_exists(__res_init HAVE___RES_INIT)
 
 check_function_exists(res_ninit HAVE_RES_NINIT)
 check_function_exists(__res_ninit HAVE___RES_NINIT)
+if (RESOLV_LIRBRARY)
+    check_library_exists(${RESOLV_LIRBRARY} res_ninit "" HAVE_RES_NINIT_IN_LIBRESOLV)
+endif()
 
 check_function_exists(res_close HAVE_RES_CLOSE)
 check_function_exists(__res_close HAVE___RES_CLOSE)
 
 check_function_exists(res_nclose HAVE_RES_NCLOSE)
 check_function_exists(__res_nclose HAVE___RES_NCLOSE)
+if (RESOLV_LIRBRARY)
+    check_library_exists(${RESOLV_LIRBRARY} res_nclose "" HAVE_RES_NCLOSE_IN_LIBRESOLV)
+endif()
 
 check_function_exists(res_query HAVE_RES_QUERY)
 check_function_exists(__res_query HAVE___RES_QUERY)

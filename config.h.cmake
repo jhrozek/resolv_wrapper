@@ -22,12 +22,14 @@
 #cmakedefine HAVE___RES_INIT 1
 
 #cmakedefine HAVE_RES_NINIT 1
+#cmakedefine HAVE_RES_NINIT_IN_LIBRESOLV 1
 #cmakedefine HAVE___RES_NINIT 1
 
 #cmakedefine HAVE_RES_CLOSE 1
 #cmakedefine HAVE___RES_CLOSE 1
 
 #cmakedefine HAVE_RES_NCLOSE 1
+#cmakedefine HAVE_RES_NCLOSE_IN_LIBRESOLV 1
 #cmakedefine HAVE___RES_NCLOSE 1
 
 #cmakedefine HAVE_RES_QUERY 1
