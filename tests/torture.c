@@ -55,7 +55,7 @@
 #define TORTURE_DNS_SRV_IPV6 "fd00::5357:5f0a"
 #define TORTURE_DNS_SRV_PORT 53
 
-#define TORTURE_SOCKET_DIR "/tmp/test_socket_wrapper_XXXXXX"
+#define TORTURE_SOCKET_DIR "/tmp/test_resolv_wrapper_XXXXXX"
 #define TORTURE_DNS_SRV_PIDFILE "dns_srv.pid"
 #define TORTURE_PCAP_FILE "socket_trace.pcap"
 
