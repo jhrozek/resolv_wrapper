@@ -33,7 +33,10 @@ set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION})
 
 # Some tests require socket_wrapper as well.
 find_package(socket_wrapper)
-if (HAVE_LIBRESOLV AND SOCKET_WRAPPER_LIBRARY)
+
+# On Solaris the socket functions are compiled into libresolv.so so we can't preload
+# socket_wrapper. Only faking will work!
+if (HAVE_LIBRESOLV AND SOCKET_WRAPPER_LIBRARY AND NOT SOLARIS)
     set(RWRAP_TESTS ${RWRAP_TESTS} test_res_query_search)
     set(PRELOAD_LIBS ${RESOLV_WRAPPER_LOCATION}:${SOCKET_WRAPPER_LIBRARY})
 endif()
