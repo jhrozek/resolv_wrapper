@@ -1067,8 +1067,7 @@ static int rwrap_res_ninit(struct __res_state *state)
 			state->_u._ext.nscount = 0;
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
 			for (i = 0; i < state->_u._ext.nscount; i++) {
-				free(state->_u._ext.nsaddrs[i]);
-				state->_u._ext.nssocks[i] = 0;
+				SAFE_FREE(state->_u._ext.nsaddrs[i]);
 			}
 #endif
 
@@ -1120,15 +1119,17 @@ static void rwrap_res_nclose(struct __res_state *state)
 {
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
 	int i;
+#endif
 
+	libc_res_nclose(state);
+
+#ifdef HAVE_RESOLV_IPV6_NSADDRS
 	if (state != NULL) {
 		for (i = 0; i < state->_u._ext.nscount; i++) {
 			SAFE_FREE(state->_u._ext.nsaddrs[i]);
-			state->_u._ext.nssocks[i] = 0;
 		}
 	}
 #endif
-	libc_res_nclose(state);
 }
 
 #if defined(HAVE_RES_NCLOSE)
@@ -1137,7 +1138,7 @@ void res_nclose(struct __res_state *state)
 void __res_nclose(struct __res_state *state)
 #endif
 {
-	libc_res_nclose(state);
+	rwrap_res_nclose(state);
 }
 
 /****************************************************************************
