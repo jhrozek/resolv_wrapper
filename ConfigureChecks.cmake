@@ -51,6 +51,8 @@ check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(resolv.h HAVE_RESOLV_H)
 
 # FUNCTIONS
+set(CMAKE_REQUIRED_LIBRARIES)
+
 find_library(RESOLV_LIRBRARY resolv)
 
 if (RESOLV_LIRBRARY)
@@ -91,8 +93,6 @@ check_function_exists(__res_search HAVE___RES_SEARCH)
 
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
-
-set(CMAKE_REQUIRED_LIBRARIES)
 
 if (UNIX)
     if (NOT LINUX)
