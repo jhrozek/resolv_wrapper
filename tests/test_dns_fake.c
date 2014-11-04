@@ -83,6 +83,41 @@ static void test_res_fake_a_query(void **state)
 	assert_string_equal(addr, "127.0.0.21");
 }
 
+static void test_res_fake_a_query_case_insensitive(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	char addr[INET_ADDRSTRLEN];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "CWRAP.ORG", ns_c_in, ns_t_a,
+			answer, sizeof(answer));
+	assert_int_not_equal(rv, -1);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+	/* The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type A and have the address that our
+	 * fake hosts file contains. Case does not matter.
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.0.21");
+
+	res_nclose(&dnsstate);
+}
+
 static void test_res_fake_a_query_notfound(void **state)
 {
 	int rv;
@@ -391,6 +426,7 @@ int main(void)
 
 	const UnitTest tests[] = {
 		unit_test(test_res_fake_a_query),
+		unit_test(test_res_fake_a_query_case_insensitive),
 		unit_test(test_res_fake_a_query_notfound),
 		unit_test(test_res_fake_aaaa_query),
 		unit_test(test_res_fake_aaaa_query_notfound),
