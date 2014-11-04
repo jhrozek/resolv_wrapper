@@ -221,7 +221,7 @@ static void torture_setup_dns_srv_ip(void **state,
 		}
 
 		rc = stat(s->srv_pidfile, &sb);
-		usleep(50);
+		usleep(200);
 	} while (rc != 0);
 	assert_int_equal(rc, 0);
 
@@ -308,7 +308,7 @@ void torture_teardown_dns_srv(void **state)
 	for (count = 0; count < 10; count++) {
 		kill(pid, SIGTERM);
 
-		usleep(100);
+		usleep(200);
 
 		rc = kill(pid, 0);
 		if (rc != 0) {
