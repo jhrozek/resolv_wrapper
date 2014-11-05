@@ -13,6 +13,9 @@ set(TORTURE_LIBRARY torture)
 add_executable(dns_srv dns_srv.c)
 target_link_libraries(dns_srv ${RWRAP_REQUIRED_LIBRARIES})
 
+add_executable(test_real_res_query test_real_res_query.c)
+target_link_libraries(test_real_res_query ${RWRAP_REQUIRED_LIBRARIES} ${CMOCKA_LIBRARY})
+
 configure_file(fake_hosts.in ${CMAKE_CURRENT_BINARY_DIR}/fake_hosts @ONLY)
 
 add_library(${TORTURE_LIBRARY} STATIC torture.c)
