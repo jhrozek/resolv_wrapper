@@ -240,7 +240,7 @@ static ssize_t rwrap_fake_rdata_common(uint16_t type,
 	}
 
 	*rdata_ptr = rd;
-	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t);
+	return written + 3 * sizeof(uint16_t) + sizeof(uint32_t) + rdata_size;
 }
 
 static ssize_t rwrap_fake_common(uint16_t type,
