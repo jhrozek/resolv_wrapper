@@ -490,6 +490,76 @@ static void test_res_fake_cname_query(void **state)
 	assert_string_equal(addr, "127.0.0.22");
 }
 
+static void test_res_fake_a_via_cname(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+	const uint8_t *rrdata;
+	char cname[MAXDNAME];
+	char addr[INET_ADDRSTRLEN];
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	/* Query for A record, but the key is a CNAME. The expected result is
+	 * that the whole chain of CNAMEs will be included in the answer section
+	 * along with the resulting A
+	 */
+	rv = res_nquery(&dnsstate, "rwrap.org", ns_c_in, ns_t_a,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 256);
+
+	ns_initparse(answer, 256, &handle);
+	ns_initparse(answer, sizeof(answer), &handle);
+
+	/*
+	 * The query must finish w/o an error, have three answers and the answers
+	 * must be a parseable RR of type CNAME and have the cname as in the
+	 * fake hosts file
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 3);
+
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_cname);
+
+	rrdata = ns_rr_rdata(rr);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				cname, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_string_equal(cname, "web.cwrap.org");
+
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 1, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_cname);
+
+	rrdata = ns_rr_rdata(rr);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				cname, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_string_equal(cname, "www.cwrap.org");
+
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 2, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_string_equal(ns_rr_name(rr), "www.cwrap.org");
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.0.22");
+}
+
 int main(void)
 {
 	int rc;
@@ -505,6 +575,7 @@ int main(void)
 		unit_test(test_res_fake_srv_query_minimal),
 		unit_test(test_res_fake_soa_query),
 		unit_test(test_res_fake_cname_query),
+		unit_test(test_res_fake_a_via_cname),
 	};
 
 	rc = run_tests(tests);
