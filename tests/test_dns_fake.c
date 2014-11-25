@@ -301,6 +301,7 @@ static void test_res_fake_srv_query_minimal(void **state)
 	int weight;
 	int port;
 	char hostname[MAXDNAME];
+	char addr[INET_ADDRSTRLEN];
 
 	(void) state; /* unused */
 
@@ -310,7 +311,7 @@ static void test_res_fake_srv_query_minimal(void **state)
 
 	rv = res_nquery(&dnsstate, "_krb5._tcp.cwrap.org", ns_c_in, ns_t_srv,
 			answer, sizeof(answer));
-	assert_in_range(rv, 1, 100);
+	assert_in_range(rv, 1, 256);
 
 	ns_initparse(answer, sizeof(answer), &handle);
 
@@ -339,6 +340,15 @@ static void test_res_fake_srv_query_minimal(void **state)
 	assert_int_equal(weight, 100);
 	assert_int_equal(port, 88);
 	assert_string_equal(hostname, "krb5.cwrap.org");
+
+	/* The additional section contains the A record of krb5.cwrap.org */
+	assert_int_equal(ns_msg_count(handle, ns_s_ar), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_ar, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_string_equal(ns_rr_name(rr), "krb5.cwrap.org");
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.0.23");
 }
 
 static void test_res_fake_soa_query(void **state)
@@ -419,6 +429,7 @@ static void test_res_fake_cname_query(void **state)
 	ns_rr rr;   /* expanded resource record */
 	const uint8_t *rrdata;
 	char cname[MAXDNAME];
+	char addr[INET_ADDRSTRLEN];
 
 	(void) state; /* unused */
 
@@ -426,9 +437,9 @@ static void test_res_fake_cname_query(void **state)
 	rv = res_ninit(&dnsstate);
 	assert_int_equal(rv, 0);
 
-	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_cname,
+	rv = res_nquery(&dnsstate, "rwrap.org", ns_c_in, ns_t_cname,
 			answer, sizeof(answer));
-	assert_in_range(rv, 1, 100);
+	assert_in_range(rv, 1, 256);
 
 	ns_initparse(answer, 256, &handle);
 	ns_initparse(answer, sizeof(answer), &handle);
@@ -451,7 +462,32 @@ static void test_res_fake_cname_query(void **state)
 				cname, MAXDNAME);
 	assert_int_not_equal(rv, -1);
 
-	assert_string_equal(cname, "therealcwrap.org");
+	assert_string_equal(cname, "web.cwrap.org");
+
+	/* The CNAME points to an A record that's present in the additional
+	 * section
+	 */
+	assert_int_equal(ns_msg_count(handle, ns_s_ar), 2);
+
+	assert_int_equal(ns_parserr(&handle, ns_s_ar, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_cname);
+	assert_string_equal(ns_rr_name(rr), "web.cwrap.org");
+	rrdata = ns_rr_rdata(rr);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				cname, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_string_equal(cname, "www.cwrap.org");
+
+	assert_int_equal(ns_parserr(&handle, ns_s_ar, 1, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_string_equal(ns_rr_name(rr), "www.cwrap.org");
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.0.22");
 }
 
 int main(void)
