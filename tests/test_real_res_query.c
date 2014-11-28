@@ -33,6 +33,10 @@
 #include <arpa/inet.h>
 #include <resolv.h>
 
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
 #define ANSIZE 256
 
 static void print_asc(const uint8_t *buf, uint32_t len)
