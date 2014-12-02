@@ -1,5 +1,11 @@
 ChangeLog
 ==========
 
+version 1.1.0 (released 2014-12-02)
+  * Added case insensitive comparsion of dns names (dns faking).
+  * Added support complete dns names (trailing dot) (dns faking).
+  * Added support for recursive name resolving (dns faking).
+  * Fixed calculation of response size (dns faking).
+
 version 1.0.0 (released 2014-10-24)
   * Initial release
