@@ -94,6 +94,8 @@ check_function_exists(__res_search HAVE___RES_SEARCH)
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
 
+check_function_exists(ns_name_compress HAVE_NS_NAME_COMPRESS)
+
 if (UNIX)
     if (NOT LINUX)
         # libsocket (Solaris)

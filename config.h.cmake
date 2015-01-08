@@ -44,6 +44,8 @@
 #cmakedefine HAVE_RES_NSEARCH 1
 #cmakedefine HAVE___RES_NSEARCH 1
 
+#cmakedefine HAVE_NS_NAME_COMPRESS 1
+
 /*************************** LIBRARIES ***************************/
 
 #cmakedefine HAVE_LIBRESOLV 1
