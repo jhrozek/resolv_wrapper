@@ -30,7 +30,6 @@ set(CMAKE_MODULE_PATH
 # add definitions
 include(DefineCMakeDefaults)
 include(DefinePlatformDefaults)
-include(DefineCompilerFlags)
 include(DefineInstallationPaths)
 include(DefineOptions.cmake)
 include(CPackConfig.cmake)
@@ -46,6 +45,9 @@ find_package(Threads)
 # config.h checks
 include(ConfigureChecks.cmake)
 configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+# Add compiler flags for the project now.
+include(DefineCompilerFlags)
 
 # check subdirectories
 add_subdirectory(src)
