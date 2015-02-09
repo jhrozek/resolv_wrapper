@@ -61,4 +61,7 @@ debug symbols.
 EXAMPLE
 -------
 
-  $ LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_CONF="./resolv.conf" dig test.example.site
+The following command would trick 'kinit(1)' into using DNS servers from "./resolv.conf"
+for Kerberos service resolution:
+
+  $ LD_PRELOAD=libresolv_wrapper.so RESOLV_WRAPPER_CONF="./resolv.conf" kinit user@EXAMPLE.COM
