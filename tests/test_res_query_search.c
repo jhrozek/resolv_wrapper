@@ -51,15 +51,19 @@
 
 #define ANSIZE 256
 
-static void setup_dns_srv_ipv4(void **state)
+static int setup_dns_srv_ipv4(void **state)
 {
 	torture_setup_dns_srv_ipv4(state);
 	setenv("RESOLV_WRAPPER_CONF", torture_server_resolv_conf(state), 1);
+
+	return 0;
 }
 
-static void teardown(void **state)
+static int teardown(void **state)
 {
 	torture_teardown_dns_srv(state);
+
+	return 0;
 }
 
 static void test_res_query(void **state)
@@ -137,16 +141,16 @@ int main(void)
 {
 	int rc;
 
-	const UnitTest tests[] = {
-		unit_test_setup_teardown(test_res_query,
-					 setup_dns_srv_ipv4,
-					 teardown),
-		unit_test_setup_teardown(test_res_search,
-					 setup_dns_srv_ipv4,
-					 teardown),
+	const struct CMUnitTest res_tests[] = {
+		cmocka_unit_test_setup_teardown(test_res_query,
+						setup_dns_srv_ipv4,
+						teardown),
+		cmocka_unit_test_setup_teardown(test_res_search,
+						setup_dns_srv_ipv4,
+						teardown),
 	};
 
-	rc = run_tests(tests);
+	rc = cmocka_run_group_tests(res_tests, NULL, NULL);
 
 	return rc;
 }

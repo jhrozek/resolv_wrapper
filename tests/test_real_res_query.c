@@ -189,12 +189,12 @@ int main(void)
 {
 	int rc;
 
-	const UnitTest tests[] = {
-		unit_test(test_res_query_a_record),
-		unit_test(test_res_query_srv_record),
+	const struct CMUnitTest real_tests[] = {
+		cmocka_unit_test(test_res_query_a_record),
+		cmocka_unit_test(test_res_query_srv_record),
 	};
 
-	rc = run_tests(tests);
+	rc = cmocka_run_group_tests(real_tests, NULL, NULL);
 
 	return rc;
 }

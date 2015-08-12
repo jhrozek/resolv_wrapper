@@ -563,21 +563,21 @@ int main(void)
 {
 	int rc;
 
-	const UnitTest tests[] = {
-		unit_test(test_res_fake_a_query),
-		unit_test(test_res_fake_a_query_case_insensitive),
-		unit_test(test_res_fake_a_query_trailing_dot),
-		unit_test(test_res_fake_a_query_notfound),
-		unit_test(test_res_fake_aaaa_query),
-		unit_test(test_res_fake_aaaa_query_notfound),
-		unit_test(test_res_fake_srv_query),
-		unit_test(test_res_fake_srv_query_minimal),
-		unit_test(test_res_fake_soa_query),
-		unit_test(test_res_fake_cname_query),
-		unit_test(test_res_fake_a_via_cname),
+	const struct CMUnitTest fake_tests[] = {
+		cmocka_unit_test(test_res_fake_a_query),
+		cmocka_unit_test(test_res_fake_a_query_case_insensitive),
+		cmocka_unit_test(test_res_fake_a_query_trailing_dot),
+		cmocka_unit_test(test_res_fake_a_query_notfound),
+		cmocka_unit_test(test_res_fake_aaaa_query),
+		cmocka_unit_test(test_res_fake_aaaa_query_notfound),
+		cmocka_unit_test(test_res_fake_srv_query),
+		cmocka_unit_test(test_res_fake_srv_query_minimal),
+		cmocka_unit_test(test_res_fake_soa_query),
+		cmocka_unit_test(test_res_fake_cname_query),
+		cmocka_unit_test(test_res_fake_a_via_cname),
 	};
 
-	rc = run_tests(tests);
+	rc = cmocka_run_group_tests(fake_tests, NULL, NULL);
 
 	return rc;
 }

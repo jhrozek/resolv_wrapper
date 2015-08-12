@@ -23,7 +23,7 @@ struct resolv_conf_test_state {
 	char *resolv_conf_path;
 };
 
-static void setup(void **state)
+static int setup(void **state)
 {
 	struct resolv_conf_test_state *test_state;
 
@@ -40,15 +40,17 @@ static void setup(void **state)
 	assert_non_null(test_state->resolv_conf);
 
 	*state = test_state;
+
+	return 0;
 }
 
-static void teardown(void **state)
+static int teardown(void **state)
 {
 	struct resolv_conf_test_state *test_state;
 
 	test_state = (struct resolv_conf_test_state *) *state;
 
-	if (test_state == NULL) return;
+	if (test_state == NULL) return -1;
 
 	if (test_state->resolv_conf) {
 		fclose(test_state->resolv_conf);
@@ -64,6 +66,8 @@ static void teardown(void **state)
 	}
 
 	free(test_state);
+
+	return 0;
 }
 
 static void test_res_ninit(void **state)
@@ -195,11 +199,12 @@ static void test_res_ninit_enoent(void **state)
 int main(void) {
 	int rc;
 
-	const UnitTest tests[] = {
-		unit_test_setup_teardown(test_res_ninit, setup, teardown),
-		unit_test(test_res_ninit_enoent),
+	const struct CMUnitTest init_tests[] = {
+		cmocka_unit_test_setup_teardown(test_res_ninit, setup, teardown),
+		cmocka_unit_test(test_res_ninit_enoent),
 	};
 
-	rc = run_tests(tests);
+	rc = cmocka_run_group_tests(init_tests, NULL, NULL);
+
 	return rc;
 }
