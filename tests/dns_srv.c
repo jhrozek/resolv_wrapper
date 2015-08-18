@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jakub Hrozek 2014 <jakub.hrozek@gmail.com>
+ * Copyright (C) Jakub Hrozek 2014 <jakub.hrozek@posteo.se>
  *
  * All rights reserved.
  *

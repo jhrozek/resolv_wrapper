@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jakub Hrozek 2014 <jakub.hrozek@gmail.com>
+ * Copyright (C) Jakub Hrozek 2014 <jakub.hrozek@posteo.se>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

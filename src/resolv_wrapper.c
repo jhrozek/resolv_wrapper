@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014      Andreas Schneider <asn@samba.org>
- * Copyright (c) 2014      Jakub Hrozek <jakub.hrozek@gmail.com>
+ * Copyright (c) 2014      Jakub Hrozek <jakub.hrozek@posteo.se>
  *
  * All rights reserved.
  *
@@ -1690,7 +1690,7 @@ int __res_nsearch(struct __res_state *state,
 }
 
 /****************************************************************************
- *   RES_QUERY
+ *   RES_SEARCH
  ***************************************************************************/
 
 static int rwrap_res_search(const char *dname,
