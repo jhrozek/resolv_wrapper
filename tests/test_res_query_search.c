@@ -66,7 +66,7 @@ static int teardown(void **state)
 	return 0;
 }
 
-static void test_res_query(void **state)
+static void test_res_nquery(void **state)
 {
 	int rv;
 	struct __res_state dnsstate;
@@ -102,7 +102,36 @@ static void test_res_query(void **state)
 	res_nclose(&dnsstate);
 }
 
-static void test_res_search(void **state)
+static void test_res_query(void **state)
+{
+	int rv;
+	unsigned char answer[ANSIZE];
+	char addr[INET_ADDRSTRLEN];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+
+	(void) state; /* unused */
+
+	rv = res_query("www.cwrap.org", ns_c_in, ns_t_a,
+			answer, sizeof(answer));
+	assert_int_not_equal(rv, -1);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type A and have the address that our
+	 * test server sends.
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.10.10");
+}
+
+static void test_res_nsearch(void **state)
 {
 	int rv;
 	struct __res_state dnsstate;
@@ -137,12 +166,46 @@ static void test_res_search(void **state)
 	res_nclose(&dnsstate);
 }
 
+static void test_res_search(void **state)
+{
+	int rv;
+	unsigned char answer[ANSIZE];
+	char addr[INET_ADDRSTRLEN];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+
+	(void) state; /* unused */
+
+	rv = res_search("www.cwrap.org", ns_c_in, ns_t_a,
+			answer, sizeof(answer));
+	assert_int_not_equal(rv, -1);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+	/* The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type A and have the address that our
+	 * test server sends
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_a);
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	assert_string_equal(addr, "127.0.10.10");
+}
+
 int main(void)
 {
 	int rc;
 
 	const struct CMUnitTest res_tests[] = {
+		cmocka_unit_test_setup_teardown(test_res_nquery,
+						setup_dns_srv_ipv4,
+						teardown),
 		cmocka_unit_test_setup_teardown(test_res_query,
+						setup_dns_srv_ipv4,
+						teardown),
+		cmocka_unit_test_setup_teardown(test_res_nsearch,
 						setup_dns_srv_ipv4,
 						teardown),
 		cmocka_unit_test_setup_teardown(test_res_search,
